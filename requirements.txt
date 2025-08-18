@@ -1,5 +1,6 @@
 datasets==2.19.2
-keras==3.3.3
+#keras==3.3.3
+tf-keras
 matplotlib==3.9.0
 numpy==1.26.4
 scikit_learn==1.5.0
@@ -10,3 +11,4 @@ tqdm==4.66.4
 pandas
 transformers 
 diffusers
+torchvision
