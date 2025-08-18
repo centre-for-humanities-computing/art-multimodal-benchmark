@@ -12,3 +12,4 @@ pandas
 transformers 
 diffusers
 torchvision
+flash_attn
