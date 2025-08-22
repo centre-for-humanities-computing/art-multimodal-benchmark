@@ -1,4 +1,0 @@
-ninja
-timm
-mteb[open_clip_torch]
-sentencepiece

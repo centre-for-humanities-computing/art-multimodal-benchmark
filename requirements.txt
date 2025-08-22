@@ -15,3 +15,7 @@ diffusers
 #torchvision
 #flash_attn
 mteb
+ninja
+timm
+mteb[open_clip_torch]
+sentencepiece

@@ -1,7 +1,5 @@
 source ./env/bin/activate
 
-pip install -r mteb_reqs.txt
-
 # Clone EVA repo for QuanSun/EVA02 models
 git clone git@github.com:baaivision/EVA.git
 
