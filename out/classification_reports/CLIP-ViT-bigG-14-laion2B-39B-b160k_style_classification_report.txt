@@ -1,0 +1,14 @@
+                      precision    recall  f1-score   support
+
+         Art_Nouveau       0.00      0.00      0.00         1
+       Expressionism       0.00      0.00      0.00         1
+       Impressionism       0.80      0.67      0.73         6
+Northern_Renaissance       1.00      1.00      1.00         1
+  Post_Impressionism       0.40      1.00      0.57         2
+             Realism       0.43      0.60      0.50         5
+         Romanticism       1.00      1.00      1.00         2
+           Symbolism       0.00      0.00      0.00         2
+
+            accuracy                           0.60        20
+           macro avg       0.45      0.53      0.47        20
+        weighted avg       0.54      0.60      0.55        20

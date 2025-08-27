@@ -1,23 +1,25 @@
 import pandas as pd
 import datasets
-from datasets import Image as Image_ds # change name because of similar PIL module
+#from datasets import Image as Image_ds # change name because of similar PIL module
 from datasets import Dataset
 import os
-import requests 
-from PIL import Image
+#from PIL import Image
 from tqdm import tqdm
 import torch
-from datasets import load_dataset
+#from datasets import load_dataset
 import numpy as np
 import mteb
 import argparse 
 from functools import partial
 import matplotlib.pyplot as plt
 import tensorflow as tf
-from keras.layers import Dense, Input
-from keras.models import Model
+from tensorflow.keras.layers import Dense, Input
+from tensorflow.keras.models import Model
+from tensorflow.keras import regularizers
 from sklearn.metrics import classification_report
 from tensorflow.keras import regularizers
+
+LOG_FILE_NAME = None
 
 def argument_parser():
 
@@ -29,37 +31,20 @@ def argument_parser():
     parser.add_argument('--epochs', type=int, help="how many epochs to run the model for")
     parser.add_argument('--hidden_layer_size', type=int, help='size of the hidden layer in classification model')
     parser.add_argument('--batch_size', type=int)
+    parser.add_argument('--log_file_name', type=str, help='what to call the output logfile')
     args = vars(parser.parse_args())
     
     return args
 
 # log error messages and save to file
+
 def log(message):
+    global LOG_FILE_NAME
     log_path = os.path.join('out', 'logs')
+    os.makedirs(log_path, exist_ok=True)
 
-    with open(os.path.join(log_path, 'progress_log.txt'), "a") as f:
+    with open(os.path.join(log_path, f'{LOG_FILE_NAME}.txt'), "a") as f:
         f.write(message + "\n")
-
-def load_iter_hf_data(dataset_name):
-
-    '''
-    Load a dataset from Huggingface
-
-    Args:
-        - dataset_name: name of dataset from HuggingFace Hub
-    '''
-
-    # load dataset from the hub
-    hf_data = datasets.load_dataset(dataset_name, split='train', streaming=True)
-
-    # convert dataset to iterable generator
-    def gen_from_iterable_dataset(iterable_ds):
-        yield from iterable_ds
-
-    # convert to dataset to be saved locally
-    ds = datasets.Dataset.from_generator(partial(gen_from_iterable_dataset, hf_data), features=hf_data.features)
-
-    return ds
 
 def split_data(ds, name, seed):
     '''
@@ -141,10 +126,7 @@ def extract_embeddings(dataset, model_path:str):
         try:
             # load model from mteb
             model = model_meta.load_model()
-
-            # move to GPU if available
-            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            model = model.to(device)
+            print(model.device)
 
         except Exception as e:
             log(f'Error loading model: {model_path}, {e}')
@@ -155,8 +137,8 @@ def extract_embeddings(dataset, model_path:str):
         
         # loading all images at once will exceed RAM limits, so we'll process it in batches instead
         all_embeddings = []
-        for i in tqdm(range(0, len(dataset), 32)): # loop over dataset with batch sizes of 32
-            batch_images = dataset[i:i+32]['image']
+        for i in tqdm(range(0, len(dataset), 128)): # loop over dataset with batch sizes of 32
+            batch_images = dataset[i:i+128]['image']
             batch_embeddings = model.get_image_embeddings(batch_images)
             all_embeddings.append(batch_embeddings)
         
@@ -173,8 +155,9 @@ def extract_embeddings(dataset, model_path:str):
         return embeddings
 
     except Exception as e:
-        log(f'Error processing image with model: {model_path}')
+        log(f'Error processing images with model: {model_path}')
         print(f'Error processing images with model: {model_path}')
+        return None
     
     # add embeddings to column
     #dataset = dataset.add_column(model_path, embeddings_list)
@@ -190,6 +173,8 @@ def embeddings_from_splits(ds_splits, models_metadata):
 
 
     for model_path in tqdm(models_metadata['name'], desc='Extracting features from images'):
+        # clean model_path name
+        model_name = model_path.split('/')[1]
         try:
             print(f'Extracting embeddings for {model_path} over train, test and val splits')
 
@@ -199,11 +184,10 @@ def embeddings_from_splits(ds_splits, models_metadata):
                 # extract embeddings from dataset
                 embeddings = extract_embeddings(dataset_split, model_path)
 
+                if embeddings is None:
+                    raise ValueError("No embeddings returned")
                 # save embeddings to npy file:
                 embeddings = embeddings.cpu().numpy()
-
-                # clean model_path name
-                model_name = model_path.split('/')[1]
 
                 # save embeddings to folder for model:
                 os.makedirs(os.path.join(embeddings_outpath, model_name), exist_ok=True)
@@ -216,6 +200,7 @@ def embeddings_from_splits(ds_splits, models_metadata):
             
             succesful_models.append(model_name)
             print(f'Embeddings for {model_path} extracted and saved to disk')
+            log(f'Embeddings for {model_path} extracted and saved to disk')
 
         except Exception as e:
             log(f'Error with {model_path}: {e}')
@@ -223,7 +208,8 @@ def embeddings_from_splits(ds_splits, models_metadata):
             failed_models.append(model_name)
             continue
 
-    print(f"These models failed: {failed_models}")    
+    print(f"These models failed: {failed_models}")
+    log(f"These models failed: {failed_models}")    
 
     return succesful_models
 
@@ -301,7 +287,11 @@ def save_plot_history(H, epochs, name):
     plt.ylabel("Accuracy")
     plt.tight_layout()
     plt.legend()
-    plt.savefig(os.path.join('out', 'plots', name))
+
+    plots_dir_path = os.path.join('out', 'plots')
+    os.makedirs(plots_dir_path, exist_ok=True)
+
+    plt.savefig(os.path.join(plots_dir_path, name))
 
 def fit_and_predict(ds_splits, hidden_layer_size, embedding_col, label_col, batch_size, epochs):
 
@@ -319,20 +309,12 @@ def fit_and_predict(ds_splits, hidden_layer_size, embedding_col, label_col, batc
         - epochs: how many epochs to run the model for
     '''
 
-    # load embeddings from disk and save as column for each of the splits
-
-    for split_name in ds_splits:
-        dataset_split = ds_splits[split_name]
-        embeddings_path = os.path.join('data', 'embeddings', embedding_col, f'{embedding_col}_{split_name}.npy')
-        embeddings = np.load(embeddings_path)
-        dataset_split = dataset_split.add_column(embedding_col, embeddings)
-        ds_splits[split_name] = dataset_split
-
     # load npy file:
     model = build_classification_model(ds_splits['train'], 
                                        hidden_layer_size, 
                                        label_col, 
-                                       embedding_col)
+                                       embedding_col,
+                                       batch_size)
 
     # convert to tensorflow datasets
     tf_ds_train = ds_splits['train'].to_tf_dataset(
@@ -373,7 +355,8 @@ def fit_and_predict(ds_splits, hidden_layer_size, embedding_col, label_col, batc
     np.save(os.path.join(history_path, f'{embedding_col}_{label_col}_history.npy'), H.history)
 
     num_epochs = len(H.history['val_loss'])
-    print(f"Model ran for {num_epochs} epochs")
+    print(f"Classification done for {embedding_col} - {label_col}. Model ran for {num_epochs} epochs")
+    log(f"Classification done for {embedding_col} - {label_col}. Model ran for {num_epochs} epochs")
 
     # save history plot in "plots" folder
     save_plot_history(H, num_epochs, f'{embedding_col}_{label_col}_history.png')
@@ -403,7 +386,7 @@ def save_classification_report(test_data, label_col, embedding_col, predicted_cl
         - predicted_classes: predicted y labels
 
     '''
-
+    
     # save the class labels
     label_class = test_data.features[label_col]
 
@@ -414,13 +397,13 @@ def save_classification_report(test_data, label_col, embedding_col, predicted_cl
     mapped_labels = {}
 
     for i in range(num_classes):
-        mapped_labels[i] = label_class.int2str(i)
+       mapped_labels[i] = label_class.int2str(i)
     
     labels = list(mapped_labels.values())
 
     # save classification report for y_true and y_pred
     report = classification_report(test_data[label_col],
-                            predicted_classes, target_names = labels)
+                           predicted_classes, target_names = labels)
     
     # save classification report
     os.makedirs(os.path.join('out', 'classification_reports'), exist_ok=True)
@@ -439,6 +422,15 @@ def classify_all_features(successful_models,
 
     # run classifier for each model
     for model_name in tqdm(successful_models, desc='Fitting classification models'):
+
+        for split_name in ds_splits:
+            dataset_split = ds_splits[split_name]
+            embeddings_path = os.path.join('data', 'embeddings', model_name, f'{model_name}_{split_name}.npy')
+            embeddings = np.load(embeddings_path, allow_pickle=True)
+            embeddings = embeddings.tolist()
+            dataset_split = dataset_split.add_column(model_name, embeddings)
+            ds_splits[split_name] = dataset_split
+
         for label_col in label_cols:
             try:
                 predicted_classes = fit_and_predict(ds_splits, 
@@ -454,6 +446,9 @@ def classify_all_features(successful_models,
                                             model_name, 
                                             predicted_classes)
             
+                #print(f'Classification done for {model_name} - {label_col}')
+                #log(f'Classification done for {model_name} - {label_col}')
+
             except Exception as e:
                 log(f"Classification failed for {model_name} - {label_col} - Error: {e}")
                 print(f"Classification failed for: {model_name} - {label_col} - Error: {e}")
@@ -462,13 +457,16 @@ def classify_all_features(successful_models,
 
 def main():
 
+    global LOG_FILE_NAME
     # parse arguments
     args = argument_parser()
 
-    # load dataset
-    ds = load_iter_hf_data(args['dataset'])
+    LOG_FILE_NAME = args['log_file_name']
 
-    data_name = args['dataset'].split('/')[1]
+    # load dataset 
+    ds = datasets.load_from_disk(os.path.join('data', args['dataset']))
+
+    data_name = args['dataset']
 
     # split dataset to train, test and validation (and save to desk)
     ds_splits = split_data(ds, data_name, 2830)
@@ -483,6 +481,7 @@ def main():
     succesful_models = embeddings_from_splits(ds_splits, models_metadata)
 
     gpus = tf.config.list_physical_devices('GPU')
+
     if gpus:
         print(f'GPUs available: {gpus}')
     else:
@@ -495,6 +494,8 @@ def main():
                           args['batch_size'], 
                           args['epochs'],
                           args['label_cols'])
+
+    log(f'Feature extraction and classification completed for all {len(succesful_models)} models!')
 
 if __name__ == '__main__':
     main()

@@ -1,0 +1,19 @@
+                       precision    recall  f1-score   support
+
+      boris-kustodiev       1.00      1.00      1.00         1
+        childe-hassam       0.00      0.00      0.00         1
+         claude-monet       1.00      1.00      1.00         1
+         gustave-dore       1.00      1.00      1.00         1
+      ivan-aivazovsky       1.00      1.00      1.00         1
+  john-singer-sargent       1.00      0.50      0.67         2
+     nicholas-roerich       1.00      1.00      1.00         2
+        pablo-picasso       0.00      0.00      0.00         1
+         paul-cezanne       1.00      1.00      1.00         1
+pierre-auguste-renoir       0.67      1.00      0.80         2
+   pyotr-konchalovsky       1.00      1.00      1.00         1
+     vincent-van-gogh       1.00      1.00      1.00         5
+       albrecht-durer       1.00      1.00      1.00         1
+
+            micro avg       0.94      0.85      0.89        20
+            macro avg       0.82      0.81      0.81        20
+         weighted avg       0.87      0.85      0.85        20
