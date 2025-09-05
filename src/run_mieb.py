@@ -231,7 +231,7 @@ def build_classification_model(train_data, hidden_layer_size, feature_col, embed
     inp = Input(shape=(inp_size,))
 
     # define shape of hidden layer
-    hidden_layer = Dense(hidden_layer_size, activation='relu', kernel_regularizer=regularizers.l2(0.01))(inp)
+    hidden_layer = Dense(hidden_layer_size, activation='relu', kernel_regularizer=regularizers.l2(0.001))(inp)
 
     # add classification layer
     classification_layer = Dense(num_classes, activation='softmax')(hidden_layer)
@@ -477,15 +477,15 @@ def main():
     # extract metadata from models
     models_metadata = get_model_names(leaderboard, args['n_models'])
 
-    # add embeddings from all models to columns in each dataset split
-    succesful_models = embeddings_from_splits(ds_splits, models_metadata)
-
     gpus = tf.config.list_physical_devices('GPU')
 
     if gpus:
         print(f'GPUs available: {gpus}')
     else:
         print('No GPU found, running on CPU.')
+
+    # add embeddings from all models to columns in each dataset split
+    succesful_models = embeddings_from_splits(ds_splits, models_metadata)
 
     # Now I should have all data needed for running classify.py scripts
     classify_all_features(succesful_models,

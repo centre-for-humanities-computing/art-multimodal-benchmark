@@ -2,7 +2,7 @@
 /opt/homebrew/bin/python3.11 -m venv env
 
 # activate env
-source ./env/bin/activate
+source env/bin/activate
 
 # install required packages
 pip install -r requirements.txt
