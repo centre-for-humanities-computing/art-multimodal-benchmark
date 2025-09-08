@@ -464,12 +464,21 @@ def main():
     LOG_FILE_NAME = args['log_file_name']
 
     # load dataset 
-    ds = datasets.load_from_disk(os.path.join('data', args['dataset']))
+    #ds = datasets.load_from_disk(os.path.join('data', args['dataset']))
 
-    data_name = args['dataset']
+    #data_name = args['dataset']
 
     # split dataset to train, test and validation (and save to desk)
-    ds_splits = split_data(ds, data_name, 2830)
+    #ds_splits = split_data(ds, data_name, 2830)
+
+    ds_train = datasets.load_from_disk(os.path.join('data', 'wikiart_train'))
+    ds_test = datasets.load_from_disk(os.path.join('data', 'wikiart_test'))
+    ds_val = datasets.load_from_disk(os.path.join('data', 'wikiart_val'))
+
+    ds_splits = {
+    'train': ds_train,
+    'test': ds_test,
+    'val': ds_val}
 
     # load MIEB leaderboard csv
     leaderboard = pd.read_csv(os.path.join('data', args['leaderboard']))
