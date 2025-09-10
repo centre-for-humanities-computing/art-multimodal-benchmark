@@ -1,3 +1,9 @@
+print('Importing modules...')
+import tensorflow as tf
+from tensorflow.keras.layers import Dense, Input
+from tensorflow.keras.models import Model
+from tensorflow.keras import regularizers
+from tensorflow.keras import regularizers
 import pandas as pd
 import datasets
 #from datasets import Image as Image_ds # change name because of similar PIL module
@@ -8,24 +14,23 @@ from tqdm import tqdm
 import torch
 #from datasets import load_dataset
 import numpy as np
+from PIL import Image
 import mteb
 import argparse 
 from functools import partial
 import matplotlib.pyplot as plt
-import tensorflow as tf
-from tensorflow.keras.layers import Dense, Input
-from tensorflow.keras.models import Model
-from tensorflow.keras import regularizers
 from sklearn.metrics import classification_report
-from tensorflow.keras import regularizers
+from torchvision import transforms
+from torch.utils.data import Dataset
+from torch.utils.data import DataLoader
+import multiprocessing as mp
 
 LOG_FILE_NAME = None
 
 def argument_parser():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--leaderboard', type=str, help='name of csv file with MIEB leaderboard')
-    parser.add_argument('--n_models', type=int, help='top n models to use from leaderboard')
+    parser.add_argument('--model_path', type=str, help='path of model in MTEB to use')
     parser.add_argument('--dataset', type=str, help='name of HuggingFace dataset')
     parser.add_argument('--label_cols', nargs='+', help= 'List of classification labels/tasks, must be columns in the dataset of type ClassLabel')
     parser.add_argument('--epochs', type=int, help="how many epochs to run the model for")
@@ -46,172 +51,113 @@ def log(message):
     with open(os.path.join(log_path, f'{LOG_FILE_NAME}.txt'), "a") as f:
         f.write(message + "\n")
 
-def split_data(ds, name, seed):
-    '''
-    Split data into train, test and validation splits
 
-    Args:
-        - ds: saved huggingface dataset
-        - name: prefix of saved dataset splits (e.g., 'WikiArt' will save datasets WikiArt_train, WikiArt_test etc.)
-        - seed: set seed to ensure reproducability
-    '''
 
-    # split data into train and test
-    ds_split = ds.train_test_split(test_size=0.2, seed=seed)
-    ds_train = ds_split['train']
-    ds_test = ds_split['test']
+def extract_embeddings(dataset, model):
+    # for large datasets, it is better to input DataLoaders to get_image_embeddings function rather than a list
 
-    # split test data into test and validation
-    ds_test_split = ds_test.train_test_split(test_size=0.5, seed=seed)
-    ds_val = ds_test_split['train']
-    ds_test = ds_test_split['test']
-
-    # save the datasets to disk with the same prefix
-    os.makedirs('data', exist_ok=True)
-
-    ds_train.save_to_disk(os.path.join('data', f"{name}_train"))
-    ds_test.save_to_disk(os.path.join('data', f"{name}_test"))
-    ds_val.save_to_disk(os.path.join('data', f"{name}_val"))
-
-    return {
-    'train': ds_train,
-    'test': ds_test,
-    'val': ds_val
-}
-
-def get_model_names(leaderboard, n_models):
-
-    # get list of all model in mteb
-    all_metas = mteb.get_model_metas()
-
-    # filter out image models, save their names
-    vision_names = [meta.name for meta in all_metas if "image" in meta.modalities]
-
-    # get model names from column of names + HF links
-    leaderboard_model_names = []
-
-    for model_link in leaderboard['Model'].iloc[:n_models]:
-        model_name = model_link.split(']')[0][1:]
-        leaderboard_model_names.append(model_name)
-
-    # match model name to full HF path
-    models_full_paths = []
-
-    for model in leaderboard_model_names:
-        for path in vision_names:
-            if path.endswith(model):
-                models_full_paths.append(path)
-
-    model_metas = []
-    for model in models_full_paths:
-        model_meta = mteb.get_model_meta(model)
-        model_metas.append(dict(model_meta))
-
-    model_metadata = pd.DataFrame(model_metas)
-
-    # save model overview to file
-    os.makedirs('out', exist_ok=True)
-    model_metadata.to_csv(os.path.join('out', f'top_{n_models}_models_metadata.csv'))
-
-    return model_metadata
-
-def extract_embeddings(dataset, model_path:str):
+    # specify transforms; convert dataset image to PIL and np array (necessary as input to DataLoader)
     
+    def convert_to_rgb(img):
+        return img.convert("RGB")
+
+    def to_numpy_array(img):
+        return np.array(img)
+
+    transform = transforms.Compose([
+        convert_to_rgb,
+        to_numpy_array
+    ])  
+
+    # create custom HuggingFace dataset class to input to DataLoader
+    class HFImageDataset(Dataset):
+        def __init__(self, hf_dataset, transform=None):
+            self.dataset = hf_dataset
+            self.transform = transform
+
+        def __len__(self):
+            return len(self.dataset)
+
+        def __getitem__(self, idx):
+            image = self.dataset[idx]['image']
+            if self.transform:
+                image = self.transform(image)
+            
+            return image
+    
+    # need to define custom data collater, create batch of list instead of stacking (not possible as input are not tensors)
+    def pil_collate_fn(batch):
+        return batch
+
+    # apply
     try:
-        #images = dataset['image']
+        wrapped_dataset = HFImageDataset(hf_dataset=dataset, transform=transform)
 
-        # get metadata information of specified model
-        model_meta = mteb.get_model_meta(model_path)
+        dataloader = DataLoader(wrapped_dataset, batch_size=32, shuffle=False, collate_fn=pil_collate_fn)
     
-        try:
-            # load model from mteb
-            model = model_meta.load_model()
-            print(model.device)
+        # process images in batches from dataloader
+        embeddings = model.get_image_embeddings(dataloader)
 
-        except Exception as e:
-            log(f'Error loading model: {model_path}, {e}')
-            print(f'Error loading model: {model_path}, {e}')
-
-        # extract image embeddings for all images with model
-        print(f"Extracting embeddings with {model_path}")
-        
-        # loading all images at once will exceed RAM limits, so we'll process it in batches instead
-        all_embeddings = []
-        for i in tqdm(range(0, len(dataset), 128)): # loop over dataset with batch sizes of 32
-            batch_images = dataset[i:i+128]['image']
-            batch_embeddings = model.get_image_embeddings(batch_images)
-            all_embeddings.append(batch_embeddings)
-        
-        # concatenate all batched embeddings into single torch tensor
-        embeddings = torch.cat(all_embeddings, dim=0)
-    
-        # Free up memory
-        del model  # delete model object
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()  # clear GPU cache
-
-        # convert to list, otherwise can't save to HF column
-        #embeddings_list = embeddings.cpu().tolist()
         return embeddings
 
     except Exception as e:
-        log(f'Error processing images with model: {model_path}')
-        print(f'Error processing images with model: {model_path}')
+        log(f'Error processing images with model: {model}')
+        print(f'Error processing images with model: {model}')
         return None
     
     # add embeddings to column
     #dataset = dataset.add_column(model_path, embeddings_list)
 
-def embeddings_from_splits(ds_splits, models_metadata):
+def embeddings_from_splits(ds_splits, model_path):
 
-    succesful_models = []
-    failed_models = []
+    # get model meta and load model
+    model_meta = mteb.get_model_meta(model_path)
+
+    try:
+        print('LOADING MODEL...')
+        model = model_meta.load_model()
+
+    except Exception as e:
+        log(f'Error loading model: {model_path}, {e}')
+        print(f'Error loading model: {model_path}, {e}')
+    
+    # now we only want the name of the model, not the entire HuggingFace path
+    model_name = model_path.split('/')[1]
 
     # create folder to save embeddings to
     embeddings_outpath = os.path.join('data', 'embeddings')
     os.makedirs(embeddings_outpath, exist_ok=True)
 
+    # extract image embeddings for all images across splits with model
+    print(f'Extracting embeddings with {model_name}')
 
-    for model_path in tqdm(models_metadata['name'], desc='Extracting features from images'):
-        # clean model_path name
-        model_name = model_path.split('/')[1]
+    for split_name in ds_splits:
+        dataset_split = ds_splits[split_name] # get i.e., train dataset
+        
         try:
-            print(f'Extracting embeddings for {model_path} over train, test and val splits')
-
-            for split_name in ds_splits:
-                dataset_split = ds_splits[split_name]
-
-                # extract embeddings from dataset
-                embeddings = extract_embeddings(dataset_split, model_path)
-
-                if embeddings is None:
-                    raise ValueError("No embeddings returned")
-                # save embeddings to npy file:
-                embeddings = embeddings.cpu().numpy()
-
-                # save embeddings to folder for model:
-                os.makedirs(os.path.join(embeddings_outpath, model_name), exist_ok=True)
-                np.save(os.path.join(embeddings_outpath, model_name, f'{model_name}_{split_name}.npy'), embeddings, allow_pickle=True)
-
-                # add column with embeddings, named after model path
-                #dataset_split = dataset_split.add_column(model_path, embeddings)
-
-                #ds_splits[split_name] = dataset_split
-            
-            succesful_models.append(model_name)
-            print(f'Embeddings for {model_path} extracted and saved to disk')
-            log(f'Embeddings for {model_path} extracted and saved to disk')
+            embeddings = extract_embeddings(dataset_split, model)
 
         except Exception as e:
-            log(f'Error with {model_path}: {e}')
-            print(f'Error with {model_path}: {e}')
-            failed_models.append(model_name)
-            continue
+            print(e)
+        
+        if embeddings is None:
+            raise ValueError("No embeddings returned")
+        
+        # save embeddings to npy file:
+        embeddings = embeddings.cpu().numpy()
 
-    print(f"These models failed: {failed_models}")
-    log(f"These models failed: {failed_models}")    
+        # save embeddings to folder for model:
+        os.makedirs(os.path.join(embeddings_outpath, model_name), exist_ok=True)
+        np.save(os.path.join(embeddings_outpath, model_name, f'{model_name}_{split_name}.npy'), embeddings, allow_pickle=True)
 
-    return succesful_models
+        # delete embeddings for that split from memory
+        del embeddings
+    
+    # after extracting embeddings, delete model from memory:
+    del model 
+
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
 
 def build_classification_model(train_data, hidden_layer_size, feature_col, embedding_col, batch_size):
     '''
@@ -349,7 +295,6 @@ def fit_and_predict(ds_splits, hidden_layer_size, embedding_col, label_col, batc
                     callbacks=[early_stopping])
 
     # save model history to use for plotting later
-    # FIX PATH
     history_path = os.path.join('out', 'history')
     os.makedirs(history_path, exist_ok=True)
     np.save(os.path.join(history_path, f'{embedding_col}_{label_col}_history.npy'), H.history)
@@ -412,48 +357,76 @@ def save_classification_report(test_data, label_col, embedding_col, predicted_cl
     with open(out_path, 'w') as file:
                 file.write(report)
 
-#find better name..
-def classify_all_features(successful_models, 
-                          ds_splits, 
+def classify_all_features(ds_splits, 
+                          model_name,
                           hidden_layer_size, 
                           batch_size, 
                           epochs,
                           label_cols):
 
-    # run classifier for each model
-    for model_name in tqdm(successful_models, desc='Fitting classification models'):
+    for split_name in ds_splits:
+        dataset_split = ds_splits[split_name]
+        embeddings_path = os.path.join('data', 'embeddings', model_name, f'{model_name}_{split_name}.npy')
+        embeddings = np.load(embeddings_path, allow_pickle=True)
+        embeddings = embeddings.tolist()
+        dataset_split = dataset_split.add_column(model_name, embeddings)
+        ds_splits[split_name] = dataset_split
 
-        for split_name in ds_splits:
-            dataset_split = ds_splits[split_name]
-            embeddings_path = os.path.join('data', 'embeddings', model_name, f'{model_name}_{split_name}.npy')
-            embeddings = np.load(embeddings_path, allow_pickle=True)
-            embeddings = embeddings.tolist()
-            dataset_split = dataset_split.add_column(model_name, embeddings)
-            ds_splits[split_name] = dataset_split
-
-        for label_col in label_cols:
-            try:
-                predicted_classes = fit_and_predict(ds_splits, 
-                                                hidden_layer_size, 
-                                                model_name, 
-                                                label_col,
-                                                batch_size, 
-                                                epochs)
-                
-                if predicted_classes is not None:
-                    save_classification_report(ds_splits['test'], 
-                                            label_col, 
+    for label_col in label_cols:
+        try:
+            predicted_classes = fit_and_predict(ds_splits, 
+                                            hidden_layer_size, 
                                             model_name, 
-                                            predicted_classes)
+                                            label_col,
+                                            batch_size, 
+                                            epochs)
             
-                #print(f'Classification done for {model_name} - {label_col}')
-                #log(f'Classification done for {model_name} - {label_col}')
+            if predicted_classes is not None:
+                save_classification_report(ds_splits['test'], 
+                                        label_col, 
+                                        model_name, 
+                                        predicted_classes)
+        
+            #print(f'Classification done for {model_name} - {label_col}')
+            #log(f'Classification done for {model_name} - {label_col}')
 
-            except Exception as e:
-                log(f"Classification failed for {model_name} - {label_col} - Error: {e}")
-                print(f"Classification failed for: {model_name} - {label_col} - Error: {e}")
-                continue
+        except Exception as e:
+            log(f"Classification failed for {model_name} - {label_col} - Error: {e}")
+            print(f"Classification failed for: {model_name} - {label_col} - Error: {e}")
+            continue
 
+def split_data(ds, name, seed):
+    '''
+    Split data into train, test and validation splits
+
+    Args:
+        - ds: saved huggingface dataset
+        - name: prefix of saved dataset splits (e.g., 'WikiArt' will save datasets WikiArt_train, WikiArt_test etc.)
+        - seed: set seed to ensure reproducability
+    '''
+
+    # split data into train and test
+    ds_split = ds.train_test_split(test_size=0.2, seed=seed)
+    ds_train = ds_split['train']
+    ds_test = ds_split['test']
+
+    # split test data into test and validation
+    ds_test_split = ds_test.train_test_split(test_size=0.5, seed=seed)
+    ds_val = ds_test_split['train']
+    ds_test = ds_test_split['test']
+
+    # save the datasets to disk with the same prefix
+    os.makedirs('data', exist_ok=True)
+
+    #ds_train.save_to_disk(os.path.join('data', f"{name}_train"))
+    #ds_test.save_to_disk(os.path.join('data', f"{name}_test"))
+    #ds_val.save_to_disk(os.path.join('data', f"{name}_val"))
+
+    return {
+    'train': ds_train,
+    'test': ds_test,
+    'val': ds_val
+}
 
 def main():
 
@@ -463,28 +436,16 @@ def main():
 
     LOG_FILE_NAME = args['log_file_name']
 
-    # load dataset 
-    #ds = datasets.load_from_disk(os.path.join('data', args['dataset']))
+    data_name = args['dataset']
 
-    #data_name = args['dataset']
-
-    # split dataset to train, test and validation (and save to desk)
-    #ds_splits = split_data(ds, data_name, 2830)
-
-    ds_train = datasets.load_from_disk(os.path.join('data', 'wikiart_train'))
-    ds_test = datasets.load_from_disk(os.path.join('data', 'wikiart_test'))
-    ds_val = datasets.load_from_disk(os.path.join('data', 'wikiart_val'))
+    ds_train = datasets.load_from_disk(os.path.join('data', f'{data_name}_train'))
+    ds_test = datasets.load_from_disk(os.path.join('data', f'{data_name}_test'))
+    ds_val = datasets.load_from_disk(os.path.join('data', f'{data_name}_val'))
 
     ds_splits = {
     'train': ds_train,
     'test': ds_test,
     'val': ds_val}
-
-    # load MIEB leaderboard csv
-    leaderboard = pd.read_csv(os.path.join('data', args['leaderboard']))
-
-    # extract metadata from models
-    models_metadata = get_model_names(leaderboard, args['n_models'])
 
     gpus = tf.config.list_physical_devices('GPU')
 
@@ -493,21 +454,22 @@ def main():
     else:
         print('No GPU found, running on CPU.')
 
-    # add embeddings from all models to columns in each dataset split
-    succesful_models = embeddings_from_splits(ds_splits, models_metadata)
+    # extract embeddings and save to file
+
+    embeddings_from_splits(ds_splits, args['model_path'])
+
+    model_name = args['model_path'].split('/')[1]
 
     # Now I should have all data needed for running classify.py scripts
-    classify_all_features(succesful_models,
-                          ds_splits, 
+    classify_all_features(ds_splits, 
+                          model_name,
                           args['hidden_layer_size'], 
                           args['batch_size'], 
                           args['epochs'],
                           args['label_cols'])
 
-    log(f'Feature extraction and classification completed for all {len(succesful_models)} models!')
+    log(f'Feature extraction and classification completed for {model_name}!')
 
 if __name__ == '__main__':
+    #mp.set_start_method('spawn', force=True)
     main()
-
-
-        
