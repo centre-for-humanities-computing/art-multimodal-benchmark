@@ -1,0 +1,4 @@
+Classification done for siglip-large-patch16-256 - genre
+Classification done for siglip-large-patch16-256 - style
+Classification done for siglip-large-patch16-256 - artist
+Feature extraction and classification completed for siglip-large-patch16-256!

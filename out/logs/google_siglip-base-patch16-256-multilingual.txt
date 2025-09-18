@@ -1,0 +1,4 @@
+Classification done for siglip-base-patch16-256-multilingual - genre
+Classification done for siglip-base-patch16-256-multilingual - style
+Classification done for siglip-base-patch16-256-multilingual - artist
+Feature extraction and classification completed for siglip-base-patch16-256-multilingual!

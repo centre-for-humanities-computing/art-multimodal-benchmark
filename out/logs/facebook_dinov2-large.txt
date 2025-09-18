@@ -1,0 +1,4 @@
+Classification done for dinov2-large - genre
+Classification done for dinov2-large - style
+Classification done for dinov2-large - artist
+Feature extraction and classification completed for dinov2-large!

@@ -1,0 +1,33 @@
+                            precision    recall  f1-score   support
+
+    Abstract_Expressionism       0.70      0.72      0.71       275
+           Action_painting       0.00      0.00      0.00         9
+         Analytical_Cubism       1.00      0.17      0.29        18
+               Art_Nouveau       0.63      0.53      0.58       423
+                   Baroque       0.55      0.73      0.63       442
+      Color_Field_Painting       0.74      0.72      0.73       158
+      Contemporary_Realism       0.52      0.31      0.39        54
+                    Cubism       0.60      0.46      0.52       213
+         Early_Renaissance       0.77      0.47      0.58       140
+             Expressionism       0.47      0.62      0.53       682
+                   Fauvism       0.54      0.24      0.33        92
+          High_Renaissance       0.51      0.49      0.50       140
+             Impressionism       0.65      0.72      0.68      1287
+Mannerism_Late_Renaissance       0.66      0.28      0.39       144
+                Minimalism       0.77      0.71      0.74       129
+     Naive_Art_Primitivism       0.52      0.66      0.58       238
+               New_Realism       0.50      0.06      0.11        31
+      Northern_Renaissance       0.68      0.69      0.68       244
+               Pointillism       0.53      0.16      0.25        56
+                   Pop_Art       0.61      0.53      0.57       144
+        Post_Impressionism       0.53      0.37      0.43       646
+                   Realism       0.54      0.66      0.59      1063
+                    Rococo       0.64      0.54      0.58       209
+               Romanticism       0.58      0.53      0.55       708
+                 Symbolism       0.56      0.50      0.53       454
+          Synthetic_Cubism       0.64      0.37      0.47        19
+                   Ukiyo_e       0.96      0.84      0.90       127
+
+                  accuracy                           0.59      8145
+                 macro avg       0.61      0.48      0.51      8145
+              weighted avg       0.59      0.59      0.58      8145

@@ -1,0 +1,4 @@
+Classification failed for CLIP-ViT-L-14-DataComp.XL-s13B-b90K - genre - Error: mat1 and mat2 must have the same dtype, but got Half and Float
+Classification failed for CLIP-ViT-L-14-DataComp.XL-s13B-b90K - style - Error: mat1 and mat2 must have the same dtype, but got Half and Float
+Classification failed for CLIP-ViT-L-14-DataComp.XL-s13B-b90K - artist - Error: mat1 and mat2 must have the same dtype, but got Half and Float
+Feature extraction and classification completed for CLIP-ViT-L-14-DataComp.XL-s13B-b90K!

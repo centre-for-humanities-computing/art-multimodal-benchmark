@@ -1,0 +1,4 @@
+Classification done for dinov2-giant - genre
+Classification done for dinov2-giant - style
+Classification done for dinov2-giant - artist
+Feature extraction and classification completed for dinov2-giant!

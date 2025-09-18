@@ -1,19 +1,135 @@
-                       precision    recall  f1-score   support
+                           precision    recall  f1-score   support
 
-      boris-kustodiev       1.00      1.00      1.00         1
-        childe-hassam       0.00      0.00      0.00         1
-         claude-monet       1.00      1.00      1.00         1
-         gustave-dore       1.00      1.00      1.00         1
-      ivan-aivazovsky       1.00      1.00      1.00         1
-  john-singer-sargent       1.00      0.50      0.67         2
-     nicholas-roerich       1.00      1.00      1.00         2
-        pablo-picasso       0.00      0.00      0.00         1
-         paul-cezanne       1.00      1.00      1.00         1
-pierre-auguste-renoir       0.67      1.00      0.80         2
-   pyotr-konchalovsky       1.00      1.00      1.00         1
-     vincent-van-gogh       1.00      1.00      1.00         5
-       albrecht-durer       1.00      1.00      1.00         1
+           Unknown Artist       0.70      0.96      0.81      4179
+          boris-kustodiev       0.62      0.32      0.42        56
+         camille-pissarro       0.68      0.80      0.73        79
+            childe-hassam       0.66      0.44      0.53        57
+             claude-monet       0.70      0.92      0.79       131
+              edgar-degas       0.78      0.47      0.59        53
+            eugene-boudin       0.87      0.62      0.73        53
+             gustave-dore       0.93      0.97      0.95        67
+               ilya-repin       0.63      0.42      0.51        57
+          ivan-aivazovsky       0.89      0.60      0.72        55
+            ivan-shishkin       0.61      0.78      0.68        65
+      john-singer-sargent       0.65      0.69      0.67        74
+             marc-chagall       0.98      0.72      0.83        80
+          martiros-saryan       0.91      0.35      0.51        57
+         nicholas-roerich       0.88      0.83      0.86       174
+            pablo-picasso       0.81      0.66      0.72        76
+             paul-cezanne       0.75      0.74      0.74        53
+    pierre-auguste-renoir       0.84      0.91      0.88       152
+       pyotr-konchalovsky       0.71      0.86      0.77        90
+         raphael-kirchner       0.96      0.81      0.88        57
+                rembrandt       0.87      0.87      0.87        70
+            salvador-dali       0.50      0.04      0.08        45
+         vincent-van-gogh       0.92      0.90      0.91       188
+         hieronymus-bosch       0.89      0.62      0.73        13
+        leonardo-da-vinci       0.71      0.33      0.45        15
+           albrecht-durer       0.60      0.77      0.67        60
+           edouard-cortes       1.00      0.80      0.89        25
+              sam-francis       1.00      0.23      0.38        30
+                juan-gris       0.00      0.00      0.00        20
+  lucas-cranach-the-elder       1.00      0.15      0.26        20
+             paul-gauguin       0.96      0.58      0.72        38
+      konstantin-makovsky       0.71      0.34      0.46        35
+             egon-schiele       0.67      0.73      0.70        22
+            thomas-eakins       0.00      0.00      0.00        30
+           gustave-moreau       0.00      0.00      0.00        10
+           francisco-goya       0.50      0.44      0.47        18
+             edvard-munch       1.00      0.17      0.29        18
+            henri-matisse       0.81      0.62      0.70        40
+             fra-angelico       0.00      0.00      0.00        15
+            maxime-maufra       0.00      0.00      0.00        11
+              jan-matejko       1.00      0.14      0.25         7
+     mstislav-dobuzhinsky       0.00      0.00      0.00        20
+            alfred-sisley       1.00      0.13      0.23        46
+             mary-cassatt       0.92      0.48      0.63        25
+          gustave-loiseau       1.00      0.36      0.53        22
+          fernando-botero       1.00      0.83      0.91        12
+     zinaida-serebriakova       1.00      0.13      0.23        39
+           georges-seurat       1.00      0.16      0.27        19
+            isaac-levitan       0.25      0.19      0.21        32
+         joaquã­n-sorolla       0.80      0.65      0.71        31
+         jacek-malczewski       0.00      0.00      0.00         6
+           berthe-morisot       0.88      0.27      0.41        26
+              andy-warhol       0.00      0.00      0.00        11
+          arkhip-kuindzhi       0.00      0.00      0.00        17
+           niko-pirosmani       1.00      0.10      0.18        10
+             james-tissot       0.89      0.48      0.63        33
+           vasily-polenov       0.00      0.00      0.00        23
+           valentin-serov       0.00      0.00      0.00        14
+          pietro-perugino       0.00      0.00      0.00        17
+           pierre-bonnard       0.00      0.00      0.00        12
+         ferdinand-hodler       1.00      0.05      0.10        19
+bartolome-esteban-murillo       1.00      0.05      0.10        19
+         giovanni-boldini       1.00      0.39      0.56        28
+             henri-martin       0.00      0.00      0.00        14
+             gustav-klimt       0.00      0.00      0.00        12
+             vasily-perov       0.00      0.00      0.00        19
+             odilon-redon       0.00      0.00      0.00        17
+               tintoretto       0.00      0.00      0.00        21
+               gene-davis       0.00      0.00      0.00        14
+                  raphael       0.00      0.00      0.00        21
+     john-henry-twachtman       0.00      0.00      0.00        18
+henri-de-toulouse-lautrec       0.67      0.21      0.32        28
+        antoine-blanchard       0.89      0.94      0.92        18
+            david-burliuk       0.88      0.23      0.37        30
+            camille-corot       0.83      0.34      0.49        58
+       konstantin-korovin       1.00      0.07      0.12        30
+             ivan-bilibin       0.89      0.47      0.62        17
+                   titian       0.60      0.15      0.24        20
+      maurice-prendergast       0.96      0.77      0.86        35
+            edouard-manet       0.57      0.32      0.41        25
+        peter-paul-rubens       0.50      0.41      0.45        27
+         aubrey-beardsley       0.40      0.36      0.38        11
+           paolo-veronese       0.00      0.00      0.00        20
+          joshua-reynolds       0.57      0.18      0.28        22
+      kuzma-petrov-vodkin       0.00      0.00      0.00        12
+      gustave-caillebotte       0.00      0.00      0.00        19
+             lucian-freud       1.00      0.62      0.76        21
+             michelangelo       1.00      0.09      0.17        11
+   dante-gabriel-rossetti       0.67      0.33      0.44        12
+          felix-vallotton       0.88      0.44      0.58        16
+  nikolay-bogdanov-belsky       0.83      0.29      0.43        17
+           georges-braque       1.00      0.04      0.08        23
+           vasily-surikov       0.75      0.17      0.27        18
+            fernand-leger       0.00      0.00      0.00        22
+         konstantin-somov       0.00      0.00      0.00        17
+       katsushika-hokusai       0.00      0.00      0.00        24
+ sir-lawrence-alma-tadema       0.88      0.41      0.56        17
+      vasily-vereshchagin       1.00      0.04      0.08        23
+    ernst-ludwig-kirchner       0.83      0.33      0.47        46
+           mikhail-vrubel       0.00      0.00      0.00        11
+          orest-kiprensky       0.62      0.29      0.39        28
+    william-merritt-chase       0.53      0.26      0.35        34
+         aleksey-savrasov       1.00      0.12      0.21        26
+             hans-memling       0.00      0.00      0.00        13
+        amedeo-modigliani       0.96      0.68      0.80        38
+            ivan-kramskoy       0.38      0.30      0.33        20
+        utagawa-kuniyoshi       0.71      0.56      0.62        27
+          gustave-courbet       0.00      0.00      0.00        25
+           william-turner       0.80      0.33      0.47        12
+    theo-van-rysselberghe       1.00      0.05      0.09        21
+            joseph-wright       0.00      0.00      0.00        12
+       edward-burne-jones       0.00      0.00      0.00         8
+            koloman-moser       0.00      0.00      0.00         7
+         viktor-vasnetsov       0.00      0.00      0.00        15
+         anthony-van-dyck       0.00      0.00      0.00        20
+               raoul-dufy       0.00      0.00      0.00         9
+               frans-hals       0.45      0.83      0.59        18
+ hans-holbein-the-younger       0.00      0.00      0.00        14
+             ilya-mashkov       0.00      0.00      0.00        13
+      henri-fantin-latour       0.00      0.00      0.00         6
+              m.c.-escher       0.00      0.00      0.00        10
+                 el-greco       1.00      0.45      0.62        20
+     mikalojus-ciurlionis       0.00      0.00      0.00         4
+   james-mcneill-whistler       0.50      0.07      0.12        15
+            karl-bryullov       0.00      0.00      0.00        22
+           jacob-jordaens       0.00      0.00      0.00        10
+      thomas-gainsborough       0.00      0.00      0.00        18
+         eugene-delacroix       0.00      0.00      0.00        10
+                canaletto       0.00      0.00      0.00         8
 
-            micro avg       0.94      0.85      0.89        20
-            macro avg       0.82      0.81      0.81        20
-         weighted avg       0.87      0.85      0.85        20
+                 accuracy                           0.72      8145
+                macro avg       0.52      0.29      0.33      8145
+             weighted avg       0.68      0.72      0.66      8145

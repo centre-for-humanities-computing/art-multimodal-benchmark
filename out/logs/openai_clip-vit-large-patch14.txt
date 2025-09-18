@@ -1,0 +1,4 @@
+Classification done for clip-vit-large-patch14 - genre
+Classification done for clip-vit-large-patch14 - style
+Classification done for clip-vit-large-patch14 - artist
+Feature extraction and classification completed for clip-vit-large-patch14!

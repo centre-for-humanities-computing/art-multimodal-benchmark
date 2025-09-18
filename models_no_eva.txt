@@ -1,5 +1,4 @@
 laion/CLIP-ViT-bigG-14-laion2B-39B-b160k
-google/siglip-so400m-patch14-384
 google/siglip-large-patch16-384
 laion/CLIP-ViT-g-14-laion2B-s34B-b88K
 google/siglip-large-patch16-256

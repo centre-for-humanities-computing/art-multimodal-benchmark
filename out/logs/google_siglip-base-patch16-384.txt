@@ -1,0 +1,4 @@
+Classification done for siglip-base-patch16-384 - genre
+Classification done for siglip-base-patch16-384 - style
+Classification done for siglip-base-patch16-384 - artist
+Feature extraction and classification completed for siglip-base-patch16-384!
