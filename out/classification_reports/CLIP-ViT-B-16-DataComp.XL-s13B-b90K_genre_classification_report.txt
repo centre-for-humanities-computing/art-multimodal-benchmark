@@ -1,0 +1,17 @@
+                    precision    recall  f1-score   support
+
+ abstract_painting       0.84      0.90      0.87       469
+         cityscape       0.74      0.79      0.77       467
+    genre_painting       0.65      0.65      0.65      1081
+      illustration       0.66      0.51      0.57       179
+         landscape       0.83      0.86      0.84      1342
+     nude_painting       0.69      0.65      0.67       198
+          portrait       0.72      0.89      0.80      1440
+religious_painting       0.71      0.75      0.73       653
+  sketch_and_study       0.70      0.47      0.56       393
+        still_life       0.77      0.72      0.74       274
+     Unknown Genre       0.63      0.53      0.57      1649
+
+          accuracy                           0.72      8145
+         macro avg       0.72      0.70      0.71      8145
+      weighted avg       0.72      0.72      0.72      8145

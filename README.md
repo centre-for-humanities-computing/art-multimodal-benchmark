@@ -11,3 +11,4 @@ This repository contains the code accompanying the abstract for the workshop "AI
 The datasets used can be found on [HuggingFace](https://huggingface.co/).
 
 
+for code for extraction of EVA-02-CLIP features see **link_to_bachelor_github**

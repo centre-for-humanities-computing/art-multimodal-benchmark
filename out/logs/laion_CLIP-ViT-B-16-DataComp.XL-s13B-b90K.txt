@@ -1,0 +1,4 @@
+Classification done for CLIP-ViT-B-16-DataComp.XL-s13B-b90K - genre
+Classification done for CLIP-ViT-B-16-DataComp.XL-s13B-b90K - style
+Classification done for CLIP-ViT-B-16-DataComp.XL-s13B-b90K - artist
+Feature extraction and classification completed for CLIP-ViT-B-16-DataComp.XL-s13B-b90K!

@@ -66,7 +66,11 @@ def create_dataloader(ds_splits, model_name, label, split, batch_size, device):
             return self.embeddings[idx], self.labels[idx]
 
     # Load embeddings and convert labels to tensors
-    embeddings_tensor = torch.load(os.path.join('data', 'embeddings', model_name, f'{model_name}_{split}.pt')).to(device)
+    embeddings_tensor = torch.load(os.path.join('data', 'embeddings', model_name, f'{model_name}_{split}.pt'))
+    
+    # cast to float32
+    embeddings_tensor = embeddings_tensor.float().to(device)
+    
     y = ds_splits[split][label]
     labels_tensor = torch.tensor(y)
 
