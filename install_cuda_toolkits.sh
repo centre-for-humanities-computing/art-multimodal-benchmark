@@ -1,8 +1,13 @@
-wget https://developer.download.nvidia.com/compute/cuda/12.5.1/local_installers/cuda_12.5.1_555.42.06_linux.run
-sudo sh cuda_12.5.1_555.42.06_linux.run
+#wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+#sudo dpkg -i cuda-keyring_1.1-1_all.deb
+#sudo apt-get update
+#sudo apt-get -y install cuda-toolkit-12-8
 
-# After install, run this from command line: (uncommented ofc)
-#export PATH=/usr/local/cuda-12.5/bin:$PATH
-#export LD_LIBRARY_PATH=/usr/local/cuda-12.5/lib64:$LD_LIBRARY_PATH
+###### RUN THESE SEQUENTIALLY IN THE SAME BASH SCRIPT
+export CUDA_HOME=/usr/local/cuda-12.8
+export PATH=$CUDA_HOME/bin:$PATH
+export CUDACXX=$CUDA_HOME/bin/nvcc 
 
-#source ~/.bashrc
+## VERIFY
+
+which nvcc

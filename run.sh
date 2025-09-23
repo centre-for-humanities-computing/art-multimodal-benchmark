@@ -1,7 +1,7 @@
 source env/bin/activate
 
 # Path to the TXT file
-MODEL_LIST="new_models_no_eva.txt"
+MODEL_LIST="eva_models.txt"
 
 # Read each line (i.e., model name) and run the Python script
 while IFS= read -r model_name; do
