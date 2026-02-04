@@ -130,7 +130,7 @@ def build_training_loop(epochs, model_inits, dataloaders, model_name, label, dev
 
      # Early stopping setup
     best_val_loss = float('inf')
-    patience = 3
+    patience = 5
     patience_counter = 0
 
      # initialize empty lists to track loss and accuracy

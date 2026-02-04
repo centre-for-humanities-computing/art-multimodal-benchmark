@@ -1,2 +1,0 @@
-Error loading model: royokong/e5-v, This wrapper only works with transformers==4.44.2
-

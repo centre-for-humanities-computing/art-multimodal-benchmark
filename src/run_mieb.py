@@ -200,7 +200,7 @@ def main():
     print(device)
 
     # extract embeddings and save to file
-    #embeddings_from_splits(ds_splits, args['model_path'])
+    embeddings_from_splits(ds_splits, args['model_path'])
 
     model_name = args['model_path'].split('/')[1]
 

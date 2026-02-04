@@ -1,9 +1,0 @@
-google/siglip-base-patch16-256
-google/siglip-base-patch16-224
-facebook/dinov2-giant
-google/siglip-base-patch16-256-multilingual
-openai/clip-vit-large-patch14
-facebook/dinov2-large
-facebook/dinov2-base
-royokong/e5-v
-laion/CLIP-ViT-B-32-DataComp.XL-s13B-b90K

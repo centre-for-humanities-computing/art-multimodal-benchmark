@@ -1,4 +1,0 @@
-Classification failed for CLIP-ViT-L-14-laion2B-s32B-b82K - genre - Error: mat1 and mat2 must have the same dtype, but got Half and Float
-Classification failed for CLIP-ViT-L-14-laion2B-s32B-b82K - style - Error: mat1 and mat2 must have the same dtype, but got Half and Float
-Classification failed for CLIP-ViT-L-14-laion2B-s32B-b82K - artist - Error: mat1 and mat2 must have the same dtype, but got Half and Float
-Feature extraction and classification completed for CLIP-ViT-L-14-laion2B-s32B-b82K!

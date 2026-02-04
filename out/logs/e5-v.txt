@@ -1,3 +1,0 @@
-Error loading model: royokong/e5-v, Using `low_cpu_mem_usage=True` or a `device_map` requires Accelerate: `pip install accelerate`
-Error processing images with model: <mteb.models.e5_v.E5VWrapper object at 0x7fdac0e611f0>
-Error processing images with model: <mteb.models.e5_v.E5VWrapper object at 0x7fb4cc5aa480>
