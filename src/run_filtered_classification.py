@@ -86,10 +86,25 @@ def main():
     # seperate classification for labels
     labels = args['label_cols']
     for label in labels:
+        # we'll loop over labels to make sure that datasets are stratified by it
 
-        # we'll loop over labels to make sure that datasets are stratified by 
+        if label == 'artist':
+            # downsample van gogh!
 
-        # add old_indices column here
+            # van-gogh indices:
+            van_gogh_indices = [idx for idx, a in enumerate(ds_full['artist_str']) if a == 'vincent-van-gogh']
+             
+            # create random number generator
+            rng = np.random.default_rng(2830)
+
+            # use this generator to randomly select rows with Van Gogh to remove:
+            vg_remove = set(rng.choice(van_gogh_indices, size=len(van_gogh_indices)//2, replace=False)) # removes 50% of van Goghs images
+
+            # only select rows not in vg_remove
+            ds_full = ds_full.select([i for i in range(len(ds_full)) if i not in vg_remove])
+
+            # verify correct rows have been removed
+            print(Counter(ds_full['artist_str']))
 
         # train, test, split - stratifying by LABEL
         ds_split = ds_full.train_test_split(test_size=0.2, seed=2830, stratify_by_column = label)
@@ -113,9 +128,7 @@ def main():
         device = "cuda" if torch.cuda.is_available() else "cpu"
         print(device)
 
-        # FIX THIS TO LOOP OVER ALL MODELS INSTEAD
-
-        # VERIFY THAT THIS WORKS
+        # loop over all models which embeddings have been extracted from
         model_list = os.listdir(os.path.join('data', 'filtered_embeddings'))
 
         # for model and label:
