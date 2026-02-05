@@ -23,7 +23,7 @@ LOG_FILE_NAME = None
 def argument_parser():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_path', type=str, help='path of model in MTEB to use') # FIX
+    #parser.add_argument('--model_path', type=str, help='path of model in MTEB to use') # FIX
     parser.add_argument('--dataset', type=str, help='name of HuggingFace dataset') 
     parser.add_argument('--label_cols', nargs='+', help= 'List of classification labels/tasks, must be columns in the dataset of type ClassLabel')
     parser.add_argument('--epochs', type=int, help="how many epochs to run the model for")
@@ -44,30 +44,30 @@ def log(message):
     with open(os.path.join(log_path, f'{LOG_FILE_NAME}.txt'), "a") as f:
         f.write(message + "\n")
 
-def classify_all_features(ds_full, 
-                          model_name,
-                          hidden_layer_size, 
-                          batch_size, 
-                          epochs,
-                          labels, 
-                          device):
+#def classify_all_features(ds_full, 
+ #                         model_name,
+  #                        hidden_layer_size, 
+   #                       batch_size, 
+    #                      epochs,
+     #                     labels, 
+      #                    device):
                
-        try:
-            fit_and_predict(ds_splits,
-                            model_name,
-                            label,
-                            batch_size,
-                            hidden_layer_size,  
-                            epochs, 
-                            device)
+       # try:
+        #    fit_and_predict(ds_splits,
+         #                   model_name,
+          #                  label,
+           #                 batch_size,
+            #                hidden_layer_size,  
+             #               epochs, 
+              #              device)
             
-            print(f'Classification done for {model_name} - {label}')
-            log(f'Classification done for {model_name} - {label}')
+            #print(f'Classification done for {model_name} - {label}')
+            #log(f'Classification done for {model_name} - {label}')
 
-        except Exception as e:
-            log(f"Classification failed for {model_name} - {label} - Error: {e}")
-            print(f"Classification failed for: {model_name} - {label} - Error: {e}")
-            continue
+        #except Exception as e:
+         #   log(f"Classification failed for {model_name} - {label} - Error: {e}")
+          #  print(f"Classification failed for: {model_name} - {label} - Error: {e}")
+            #continue
 
 def main():
 

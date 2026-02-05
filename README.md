@@ -8,7 +8,34 @@ This repository contains the code accompanying the abstract for the workshop "AI
 
 ### Data
 
-The datasets used can be found on [HuggingFace](https://huggingface.co/).
-
+The datasets used can be found on [HuggingFace](https://huggingface.co/). # link? 
 
 for code for extraction of EVA-02-CLIP features see **link_to_bachelor_github**
+
+
+### Usage
+
+First, clone the repo with 
+
+```
+git clone https://github.com/centre-for-humanities-computing/art-multimodal-benchmark.git
+
+```
+
+In the main folder, set up virtual environment and install required packages with
+
+```
+bash setup.sh
+```
+
+To run feature extraction, run: 
+
+```
+???
+```
+
+To run classifications, run:
+
+```
+???
+```

@@ -8,7 +8,27 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report
 
-def build_classification_model(ds_splits, model_name, hidden_layer_size, label, batch_size, device, inp_size):
+def build_classification_model(ds_splits, model_name, label, batch_size, device, inp_size):
+
+    if label=='artist':
+
+        hidden_layer_size = 2000
+        decay=0.01
+        lr = 0.001
+        dropout_p = 0.3
+    
+    elif label=='style':
+        
+        hidden_layer_size = 1200
+        decay=0.01
+        lr = 0.0003
+        dropout_p = 0.3
+    
+    else: # model-specific settings for genre
+        hidden_layer_size = 500
+        decay=0.01
+        lr = 0.0001
+        dropout_p = 0.4
 
     # get number of classes and embeddings dimensions
     num_classes = ds_splits['train'].features[label].num_classes
@@ -16,28 +36,38 @@ def build_classification_model(ds_splits, model_name, hidden_layer_size, label, 
     model = nn.Sequential(
         nn.Linear(in_features=inp_size, out_features=hidden_layer_size),
         nn.ReLU(),
+        nn.Dropout(p=dropout_p),
         nn.Linear(in_features=hidden_layer_size, out_features=num_classes)
             ).to(device) # use GPU if available
-    
-    # applying softmax is not necessary for CrossEntropyLoss?
+
+    # define class weights
+    y_tensor = torch.tensor(ds_splits['train'][label])
+    class_counts = torch.bincount(y_tensor)
+    class_weights = 1.0 / class_counts.float() # weight the loss inversely proportional to class frequency
+    class_weights /= class_weights.sum() # normalize weights so they sum to one
 
     # Define loss function
-    criterion = nn.CrossEntropyLoss() # is it same as sparse-categorical-cross-entropy?
+    criterion = nn.CrossEntropyLoss(weight=class_weights.to(device)) 
 
     # define optimizer with learning rate scheduler and L2 regularization (==weight_decay - there's no direct kernel-regularizer keras equivalent in torch)
-    optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=0.01) # apply to all hyperparameters of all layers
+    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=decay) # apply to all hyperparameters of all layers
 
     # learning rate scheduler with exponential decays
-    steps_per_epoch = len(ds_splits['train']) // batch_size
-    decay_steps = steps_per_epoch * 2
-    decay_per_batch = 0.9 ** (1 / decay_steps)  # calc decay rate per batch
+    #steps_per_epoch = len(ds_splits['train']) // batch_size
+    #decay_steps = steps_per_epoch * 2
+    #decay_per_batch = 0.9 ** (1 / decay_steps)  # calc decay rate per batch
 
-    scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=decay_per_batch)
+    #scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=decay_per_batch)
+    
+    # test with per-epoch decay rather than per batch
+    scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
 
-    return {'model': model,
-                   'criterion': criterion,
-                   'optimizer': optimizer,
-                   'scheduler': scheduler}
+    model_inits = {'model': model,
+                            'criterion': criterion,
+                            'optimizer': optimizer,
+                            'scheduler': scheduler}
+
+    return model_inits
 
 def create_dataloader(ds_splits, model_name, label, split, batch_size, device):
     
@@ -154,7 +184,7 @@ def build_training_loop(epochs, model_inits, dataloaders, model_name, label, dev
             model_inits['optimizer'].step()
 
             # update learning rate according to schedule
-            model_inits['scheduler'].step()
+            #model_inits['scheduler'].step()
 
             # calculate total loss for batch and add to total_loss variable to accumulate across batches
             total_loss += loss.item() * X_train.size(0)
@@ -211,6 +241,8 @@ def build_training_loop(epochs, model_inits, dataloaders, model_name, label, dev
         val_losses.append(val_loss)
         val_accs.append(val_acc)
 
+        model_inits['scheduler'].step()
+
         # prinnt metrics for epoch
         print(f"Epoch {epoch+1}: Train Loss={train_loss:.4f}, Val Loss={val_loss:.4f}, Val Acc={val_acc:.4f}")
 
@@ -259,7 +291,8 @@ def build_training_loop(epochs, model_inits, dataloaders, model_name, label, dev
 
     fitted_model_dir = os.path.join("out", "saved_models")
     os.makedirs(fitted_model_dir, exist_ok=True) 
-    model_save_path = os.path.join(model_dir, f"{model_name}_{label}_best_model.pt")
+    model_save_path = os.path.join(fitted_model_dir, f"{model_name}_{label}_best_model.pt")
+    torch.save(model_inits['model'].state_dict(), model_save_path)
 
     return history, predictions
 
@@ -277,22 +310,25 @@ def save_classification_report(test_data, label_col, model_name, predicted_class
     '''
     
     # save the class labels
-    label_class = test_data.features[label_col]
+    #label_class = test_data.features[label_col]
 
     # save the number of classes
-    num_classes = test_data.features[label_col].num_classes
+    #num_classes = test_data.features[label_col].num_classes
 
     # map integer values to class label strings
-    mapped_labels = {}
+    #mapped_labels = {}
 
-    for i in range(num_classes):
-       mapped_labels[i] = label_class.int2str(i)
+    #for i in range(num_classes):
+     #  mapped_labels[i] = label_class.int2str(i)
     
-    labels = list(mapped_labels.values())
+    #labels = list(mapped_labels.values())
+
+    labels = np.unique(test_data[label_col])
+    target_names = [test_data.features[label_col].int2str(int(i)) for i in labels]
 
     # save classification report for y_true and y_pred
     report = classification_report(np.array(test_data[label_col]),
-                           predicted_classes, target_names = labels)
+                           predicted_classes, target_names = target_names)
     
     # save classification report
     os.makedirs(os.path.join('out', 'classification_reports'), exist_ok=True)
@@ -302,14 +338,14 @@ def save_classification_report(test_data, label_col, model_name, predicted_class
                 file.write(report)
 
 
-def fit_and_predict(ds_splits, model_name, label, batch_size, hidden_layer_size, epochs, device):
+def fit_and_predict(ds_splits, model_name, label, batch_size, epochs, device):
 
     '''
     Model name as in only name, not 'google/siglip...' path
 
     This is the function we want to import to the other script
     '''
-
+    print(f"Starting classification for {model_name}")
     # define dataloaders
     train_loader, inp_size = create_dataloader(ds_splits, model_name, label, 'train', batch_size, device)
     val_loader, _ = create_dataloader(ds_splits, model_name, label, 'val', batch_size, device)
@@ -320,7 +356,7 @@ def fit_and_predict(ds_splits, model_name, label, batch_size, hidden_layer_size,
                    'test_loader': test_loader}
     
     # build model
-    model_inits = build_classification_model(ds_splits, model_name, hidden_layer_size, label, batch_size, device, inp_size)
+    model_inits = build_classification_model(ds_splits, model_name, label, batch_size, device, inp_size)
 
     # train loop
     history, predictions = build_training_loop(epochs, model_inits, dataloaders, model_name, label, device)
