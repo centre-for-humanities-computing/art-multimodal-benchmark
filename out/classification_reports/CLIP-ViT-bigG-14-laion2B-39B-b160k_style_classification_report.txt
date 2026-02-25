@@ -1,0 +1,26 @@
+                            precision    recall  f1-score   support
+
+    Abstract_Expressionism       0.72      0.78      0.75        23
+               Art_Nouveau       0.62      0.73      0.67       127
+                   Baroque       0.94      0.93      0.93       120
+      Color_Field_Painting       0.75      0.75      0.75        16
+                    Cubism       0.70      0.85      0.77        80
+         Early_Renaissance       0.78      0.78      0.78        18
+             Expressionism       0.67      0.77      0.72       197
+                   Fauvism       0.33      0.58      0.42        12
+          High_Renaissance       0.75      0.75      0.75        53
+             Impressionism       0.92      0.76      0.83       767
+Mannerism_Late_Renaissance       0.84      0.96      0.89        53
+     Naive_Art_Primitivism       0.76      0.84      0.80       103
+      Northern_Renaissance       0.98      0.97      0.97       135
+               Pointillism       0.59      0.77      0.67        26
+        Post_Impressionism       0.67      0.76      0.71       316
+                   Realism       0.81      0.76      0.78       633
+                    Rococo       0.91      0.98      0.94        41
+               Romanticism       0.79      0.87      0.83       250
+                 Symbolism       0.72      0.67      0.70       168
+          Synthetic_Cubism       0.69      0.79      0.73        14
+
+                  accuracy                           0.79      3152
+                 macro avg       0.75      0.80      0.77      3152
+              weighted avg       0.80      0.79      0.79      3152

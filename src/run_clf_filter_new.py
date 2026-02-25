@@ -28,6 +28,7 @@ def argument_parser():
     parser.add_argument('--label_cols', nargs='+', help= 'List of classification labels/tasks, must be columns in the dataset of type ClassLabel')
     parser.add_argument('--epochs', type=int, help="how many epochs to run the model for")
     parser.add_argument('--batch_size', type=int)
+    parser.add_argument('--seed', type=int, help='seed for train/test splitting')
     parser.add_argument('--log_file_name', type=str, help='what to call the output logfile')
     args = vars(parser.parse_args())
     
@@ -103,34 +104,38 @@ def main():
     ds_full = ds_full.select([i for i in range(len(ds_full)) if i not in idx_to_remove])
 
     # verify correct rows have been removed
-    print(Counter(ds_full['artist_str']))
-    print(Counter(ds_full['style_str']))
-    print(Counter(ds_full['genre_str']))
+    #print(Counter(ds_full['artist_str']))
+    #print(Counter(ds_full['style_str']))
+    #print(Counter(ds_full['genre_str']))
 
     # split data
-    ds_split = ds_full.train_test_split(test_size=0.2, seed=2830) # implicit shuffle=True
+    ds_split = ds_full.train_test_split(test_size=0.2, seed=args['seed']) # implicit shuffle=True
     ds_train = ds_split['train']
     ds_test = ds_split['test']
 
     # split test data into test and validation
-    ds_test_split = ds_test.train_test_split(test_size=0.5, seed=2830)# implicit shuffle=True
+    ds_test_split = ds_test.train_test_split(test_size=0.5, seed=args['seed'])# implicit shuffle=True
     ds_val = ds_test_split['train']
     ds_test = ds_test_split['test']
 
     # save test data explicitly to disk for later manipulation and prediction
-    ds_test.save_to_disk(os.path.join('data', f"wikiart_filtered_test"))
+    ds_test.save_to_disk(os.path.join('data', f"wikiart_filtered_test_split"))
 
     ds_splits = {
             'train': ds_train,
             'test': ds_test,
             'val': ds_val}
 
+    print(f"SIZE OF TRAIN SPLIT:{len(ds_splits['train'])}")
+    print(f"SIZE OF VAL SPLIT:{len(ds_splits['val'])}")
+    print(f"SIZE OF TEST SPLIT:{len(ds_splits['test'])}")
+
     # use GPU if available, otherwise run with CPU
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(device)
 
     # loop over all models which embeddings have been extracted from
-    model_list = os.listdir(os.path.join('data', 'filtered_embeddings'))
+    model_list = os.listdir(os.path.join('data', 'filtered_embeddings_FINAL'))
 
     for model_name in model_list:
         classify_all_features(ds_splits, 

@@ -69,7 +69,7 @@ def build_classification_model(ds_splits, model_name, label, batch_size, device,
 
     return model_inits
 
-def create_dataloader(ds_splits, model_name, label, split, batch_size, device):
+def create_dataloader(ds_splits, full_embedding_pt, label, split, batch_size, device):
     
     class EmbeddingsDataset(Dataset):
         def __init__(self, embeddings, labels):
@@ -84,7 +84,7 @@ def create_dataloader(ds_splits, model_name, label, split, batch_size, device):
 
     # load full embedding and split based on correct indices
     split_indices = ds_splits[split]['old_emb_indices']
-    full_embedding_pt = torch.load(os.path.join('data', 'filtered_embeddings', model_name, f'{model_name}_all_splits.pt'))
+    #full_embedding_pt = torch.load(os.path.join('data', 'filtered_embeddings_FINAL', model_name, f'{model_name}_all_splits.pt'))
 
     filtered_embeddings = full_embedding_pt[split_indices]
 
@@ -346,10 +346,15 @@ def fit_and_predict(ds_splits, model_name, label, batch_size, epochs, device):
     This is the function we want to import to the other script
     '''
     print(f"Starting classification for {model_name}")
+
+    # load embeddings for model
+
+    full_embedding_pt = torch.load(os.path.join('data', 'filtered_embeddings_FINAL', model_name, f'{model_name}_all_splits.pt'))
+
     # define dataloaders
-    train_loader, inp_size = create_dataloader(ds_splits, model_name, label, 'train', batch_size, device)
-    val_loader, _ = create_dataloader(ds_splits, model_name, label, 'val', batch_size, device)
-    test_loader, _ = create_dataloader(ds_splits, model_name, label, 'test', batch_size, device)
+    train_loader, inp_size = create_dataloader(ds_splits, full_embedding_pt, label, 'train', batch_size, device)
+    val_loader, _ = create_dataloader(ds_splits, full_embedding_pt, label, 'val', batch_size, device)
+    test_loader, _ = create_dataloader(ds_splits, full_embedding_pt, label, 'test', batch_size, device)
 
     dataloaders = {'train_loader': train_loader,
                    'val_loader': val_loader,
