@@ -32,6 +32,31 @@ def argument_parser():
     
     return args
 
+def filter_data(ds, label, subclassification_task, seed):
+    ds = ds.add_column('old_indices', range(len(ds)))
+
+    # find the rows that matches the subclassification task
+    subclass_indices = [idx for idx, a in enumerate(ds[f'{label}_str']) if a in subclassification_task]
+    ds_subset = ds.select([i for i in range(len(ds)) if i in subclass_indices])
+
+    # do some sort of label remapping ? 
+
+    # split into train, val and test: 
+    ds_split = ds_subset.train_test_split(test_size=0.2, seed=seed, stratify_by_column = label)
+    ds_train = ds_split['train']
+    ds_test = ds_split['test']
+
+    # split test data into test and validation
+    ds_test_split = ds_test.train_test_split(test_size=0.5, seed=seed, stratify_by_column = label)
+    ds_val = ds_test_split['train']
+    ds_test = ds_test_split['test']
+
+    ds_splits = {
+            'train': ds_train,
+            'test': ds_test,
+            'val': ds_val}
+
+    return ds_splits
 
 def main():
 
@@ -44,7 +69,8 @@ def main():
     ds_full = datasets.load_from_disk(os.path.join('data', data_name))
 
     # add column with indices
-    ds_full = ds_full.add_column('old_emb_indices', range(len(ds_full)))
+    ds_full = ds_full.add_column('old_indices', range(len(ds_full)))
+
 
     # only select rows with selected artist/styles/genres
 
