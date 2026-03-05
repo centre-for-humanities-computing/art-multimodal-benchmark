@@ -1,22 +1,22 @@
-print('Importing modules...')
-import pandas as pd
 import datasets
-from datasets import Dataset
-import os
-from tqdm import tqdm
-import torch
-from collections import Counter
-#from datasets import load_dataset
 import numpy as np
-import argparse 
-import matplotlib.pyplot as plt
-from torch.utils.data import Dataset
+import os
+from PIL import Image
+from datasets import Image as Image_ds
+from datasets import ClassLabel, Features
+import pandas as pd 
+import torch
+from tqdm import tqdm
+from collections import Counter
+import os
+from torch import optim, nn, utils, Tensor
+from torchvision.transforms import ToTensor
+import lightning as L
+from lightning.pytorch.callbacks import ModelCheckpoint
+from lightning.pytorch.loggers.tensorboard import TensorBoardLogger
+from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from torch.utils.data import DataLoader
-# IMPORT fit_and_predict from classify.py script
-import sys
-sys.path.append(os.path.dirname(__file__))
-from classify_updated import fit_and_predict
-import traceback
+from sklearn.metrics import classification_report
 
 def argument_parser():
 
@@ -25,21 +25,49 @@ def argument_parser():
     parser.add_argument('--dataset', type=str, help='name of HuggingFace dataset') 
     parser.add_argument('--subclasses', nargs='+', help= 'List of classes to run subclassification on')
     parser.add_argument('--subclass_label', type=str, help='whether chosen subclassification task is for genre, styles or artists')
+    parser.add_argument('--hidden_layer_size', stype=float, help= 'size of hidden layer in clf model')
     parser.add_argument('--epochs', type=int, help="how many epochs to run the model for")
     parser.add_argument('--batch_size', type=int)
-    parser.add_argument('--log_file_name', type=str, help='what to call the output logfile')
+    parser.add_argument('--lr', type=int, help='learning rate')
+    parser.add_argument('--model_names', nargs='+', help='list of models to run classification task with')
+    parser.add_argument('--savefile_suffix', type=str, help='suffix to add to saved files to identify classification task')
     args = vars(parser.parse_args())
     
     return args
+
+def remap_features(ds_original, ds_filtered, label):
+
+    original_feature = ds_original.features[label] # the ClassLabel feature
+    original_names = original_feature.names
+
+    # classes(names) in new subclassification dataset:
+    used_class_names = sorted(list(set(ds_filtered[f"{label}_str"])))
+    new_class_label = ClassLabel(names=used_class_names)
+
+    # set up function to remap from str -> int for new ClassLabels
+    def remap_labels(example):
+        example[label] = new_class_label.str2int(example[f"{label}_str"])
+        return example
+    
+    # use map to remap classlabels
+    ds_filtered = ds_filtered.map(remap_labels)
+
+    # recast the class label feature to new labels
+    new_features = ds_filtered.features.copy()
+    new_features[label] = new_class_label
+    ds_filtered = ds_filtered.cast(new_features)
+
+    return ds_filtered
 
 def filter_data(ds, label, subclassification_task, seed):
     ds = ds.add_column('old_indices', range(len(ds)))
 
     # find the rows that matches the subclassification task
     subclass_indices = [idx for idx, a in enumerate(ds[f'{label}_str']) if a in subclassification_task]
-    ds_subset = ds.select([i for i in range(len(ds)) if i in subclass_indices])
+    ds_subset = ds.select(subclass_indices)
 
-    # do some sort of label remapping ? 
+    # remap labels to fit to new number of classes for subclassification task
+    ds_subset = remap_features(ds, ds_subset, label)
 
     # split into train, val and test: 
     ds_split = ds_subset.train_test_split(test_size=0.2, seed=seed, stratify_by_column = label)
@@ -58,9 +86,164 @@ def filter_data(ds, label, subclassification_task, seed):
 
     return ds_splits
 
+# DATALOADERS
+def create_dataloader(ds_splits, full_embedding_pt, label, split, batch_size, idx_column):
+    class EmbeddingsDataset(Dataset):
+        def __init__(self, embeddings, labels):
+            self.embeddings = embeddings
+            self.labels = labels
+
+        def __len__(self):
+            return len(self.labels)
+
+        def __getitem__(self, idx):
+            return self.embeddings[idx], self.labels[idx]
+
+    # load full embedding and split based on correct indices
+    split_indices = ds_splits[split][idx_column]
+    #full_embedding_pt = torch.load(os.path.join('data', 'filtered_embeddings_FINAL', model_name, f'{model_name}_all_splits.pt'))
+
+    filtered_embeddings = full_embedding_pt[split_indices]
+
+    # cast to float32
+    #embeddings_tensor = filtered_embeddings.float().to(device)
+    embeddings_tensor = filtered_embeddings.float()
+
+    y = ds_splits[split][label]
+    labels_tensor = torch.tensor(y)
+
+    shuffle=False
+
+    if split == 'train':
+        shuffle=True
+
+    dataset = EmbeddingsDataset(embeddings_tensor, labels_tensor)
+
+    # input to data loader
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle) # set shuffle=True for train
+
+    embedding_size = embeddings_tensor.shape[1]
+
+    return dataloader, embedding_size
+
+def build_model(hidden_layer_size, label, inp_size, dropout_p, ds_splits): # do you need device as well??
+
+    num_classes = ds_splits['train'].features[label].num_classes
+
+    model = nn.Sequential(
+        nn.Linear(in_features=inp_size, out_features=hidden_layer_size),
+        nn.ReLU(),
+        nn.Dropout(p=dropout_p),
+        nn.Linear(in_features=hidden_layer_size, out_features=num_classes)
+            ) ### MAYBE DELETE TO(DEVICE) PART???????
+
+    return model 
+
+def define_class_weights(ds_splits, label):
+    y_tensor = torch.tensor(ds_splits['train'][label])
+    class_counts = torch.bincount(y_tensor)
+    class_weights = 1.0 / class_counts.float() # weight the loss inversely proportional to class frequency
+    class_weights /= class_weights.sum() # normalize weights so they sum to one
+
+    return class_weights
+
+class SubclassModel(L.LightningModule):
+    def __init__(self, model, class_weights, lr, weight_decay): # options to set some default parameters here
+
+        # not really sure what this does:
+        super().__init__()
+
+        self.model = model
+        self.lr = lr 
+        self.weight_decay = weight_decay 
+
+        # buffer makes sure that class weights moves automatically to GPU
+        self.register_buffer('class_weights', class_weights)
+        self.loss_fn = nn.CrossEntropyLoss(weight=self.class_weights)
+    
+    # not exactly sure what this part is
+    def forward(self, x):
+        return self.model(x)
+
+    def training_step(self, batch, batch_idx):
+        X, y = batch 
+        output = model(X)
+        loss = self.loss_fn(output, y)
+        acc = (output.argmax(1) == y).float().mean()
+
+        # log the training loss and accuracy
+        # Log the loss at each training step and epoch, create a progress bar
+        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True) # logged per-epoch level
+        self.log("train_acc", acc, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+
+        return loss 
+    
+    # this defines the validation loop
+    def validation_step(self, batch, batch_idx):
+        X, y = batch 
+        output = model(X)
+        loss = self.loss_fn(output, y)
+        acc = (output.argmax(1) == y).float().mean()
+        self.log('val_loss', loss)
+        self.log('val_acc', acc)
+    
+    # lightning automatically runs testing with torch.no_grad() and model.eval()
+    def test_step(self, batch, batch_idx):
+        X, y = batch 
+        output = model(X)
+        loss = self.loss_fn(output, y)
+        acc = (output.argmax(1) == y).float().mean()
+        self.log('test_loss', loss)
+        self.log('test_acc', acc) 
+    
+    def predict_step(self, batch, batch_idx):
+        X, y = batch
+        logits = self(X)
+        preds = torch.argmax(logits, dim=1)
+        return preds
+
+    def configure_optimizers(self):
+        optimizer = optim.Adam(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
+        scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9) # set gamma or make changeble parameter?
+
+        return { # has to be returned in a specific format
+                "optimizer": optimizer,
+                "lr_scheduler": {
+                    "scheduler": scheduler,
+                    "monitor": "val_loss",},
+                }
+
+def save_classification_report(test_data, label_col, model_name, predicted_classes):
+
+    '''
+    Save classification report on predicted versus true data
+
+    Args:
+        - test_data: huggingface ds with test data
+        - feature_col: label of dataset classified, e.g., 'genre'
+        - embedding_col: name of column containing image embeddings
+        - predicted_classes: predicted y labels
+
+    '''
+
+    labels = np.unique(test_data[label_col])
+    target_names = [test_data.features[label_col].int2str(int(i)) for i in labels]
+
+    # save classification report for y_true and y_pred
+    report = classification_report(np.array(test_data[label_col]),
+                           predicted_classes, target_names = target_names)
+    
+    # save classification report
+    os.makedirs(os.path.join('out', 'classification_reports'), exist_ok=True)
+    out_path = os.path.join("out", "classification_reports", f'{model_name}_{label_col}_classification_report.txt')
+
+    with open(out_path, 'w') as file:
+                file.write(report)
+
 def main():
 
-    # modulize this later
+    # parse command line arguments
+    args = argument_parser()
 
     # load data
     data_name = args['dataset']
@@ -68,14 +251,65 @@ def main():
     # load full dataset with all images from disk
     ds_full = datasets.load_from_disk(os.path.join('data', data_name))
 
-    # add column with indices
-    ds_full = ds_full.add_column('old_indices', range(len(ds_full)))
+    # subset dataset based on chosen subclassification task
+    classification_task = args['subclasses']
+    ds_splits = filter_data(ds, args['subclass_label'], classification_task, 2830)
 
+    batch_size = args['batch_size']
 
-    # only select rows with selected artist/styles/genres
+    # loop over model(s) to be tested for the classification task
+    for model_name in args['model_names']:
+         # create dataloaders
+        full_embedding_pt = torch.load(os.path.join('data', 'filtered_embeddings_FINAL', model_name, f'{model_name}_all_splits.pt'))
+        train_loader, inp_size = create_dataloader(ds_splits, full_embedding_pt, label, 'train', batch_size, 'old_indices')
+        val_loader, _ = create_dataloader(ds_splits, full_embedding_pt, label, 'val', batch_size, 'old_indices')
+        test_loader, _ = create_dataloader(ds_splits, full_embedding_pt, label, 'test', batch_size, 'old_indices')
 
-    
+        # create model
+        model_architecture = build_model(args['hidden_layer_size'], args['label'], inp_size, 0.3, ds_splits)
 
-    # save confusion matrix
+        # define class weights
+        class_weights = define_class_weights(ds_splits, args['label'])
 
+        # define lightning model
+        model = SubclassModel(model_architecture, class_weights, lr=args['lr'], weight_decay=0.01)
 
+        # set callback & early stopping:
+        check_path = os.path.join('out', 'checkpoints')
+        os.makedirs(check_path, exist_ok=True)
+        checkpoint_callback = ModelCheckpoint(
+                                    dirpath=os.path.join(check_path, model_name),
+                                    monitor="val_loss",
+                                    filename=file_name+"-{epoch:02d}-{val_loss:.2f}-{val_acc:.2f}",
+                                    save_top_k=2,
+                                    mode="min",
+                                    )
+        
+        early_stopping = EarlyStopping(monitor="val_loss", patience=5, mode="min", verbose=False)
+
+        # fit model
+        trainer = L.Trainer(
+                    max_epochs=args['epochs'],
+                    callbacks=[checkpoint_callback, early_stopping],
+                    accelerator="gpu" if torch.cuda.is_available() else "cpu",
+                    devices="auto",
+                    )
+
+        trainer.fit(model, train_loader, val_loader)
+
+        # test
+        trainer.test(model, test_loader)
+
+        # + predict
+        all_preds_batches = trainer.predict(model, test_loader)
+        all_preds = torch.cat(all_preds_batches).cpu().numpy()
+
+        # save classification report
+        save_classification_report(ds_splits['test'], args['label'], model_name, all_preds)
+
+        # save confusion matrix
+
+        # trainer needs to run in the main script!!!
+
+if __name__ == '__main__':
+    main()
