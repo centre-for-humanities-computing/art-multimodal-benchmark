@@ -17,6 +17,7 @@ from lightning.pytorch.loggers.tensorboard import TensorBoardLogger
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from torch.utils.data import DataLoader
 from sklearn.metrics import classification_report
+from torchmetrics.classification import ConfusionMatrix
 
 def argument_parser():
 
@@ -213,7 +214,21 @@ class SubclassModel(L.LightningModule):
                     "monitor": "val_loss",},
                 }
 
-def save_classification_report(test_data, label_col, model_name, predicted_classes):
+def save_conf_matrix(model_name, y_true, y_pred, clf_task, labels, task_name):
+
+    y_true = torch.tensor(y_true)
+    y_pred = torch.tensor(y_pred)
+
+    num_labels = len(labels)
+    confmat = ConfusionMatrix(task="multiclass", num_labels=num_labels)
+    confmat.update(y_pred, y_true)
+    fig, ax = confmat.plot(add_text = True, labels = labels)
+
+    os.makedirs(os.path.join('out', 'subclassification_conf_matrices'), exist_ok=True)
+    out_path = os.path.join("out", "subclassification_conf_matrices", f'{model_name}_{task_name}_confusion_matrix.png')
+    fig.savefig(out_path, dpi=300, bbox_inches="tight")
+
+def save_results(test_data, y_pred, model_name, label_col, task_name):
 
     '''
     Save classification report on predicted versus true data
@@ -225,7 +240,7 @@ def save_classification_report(test_data, label_col, model_name, predicted_class
         - predicted_classes: predicted y labels
 
     '''
-
+    # FIX THIS? 
     labels = np.unique(test_data[label_col])
     target_names = [test_data.features[label_col].int2str(int(i)) for i in labels]
 
@@ -234,11 +249,15 @@ def save_classification_report(test_data, label_col, model_name, predicted_class
                            predicted_classes, target_names = target_names)
     
     # save classification report
-    os.makedirs(os.path.join('out', 'classification_reports'), exist_ok=True)
-    out_path = os.path.join("out", "classification_reports", f'{model_name}_{label_col}_classification_report.txt')
+    os.makedirs(os.path.join('out', 'subclassification_reports'), exist_ok=True)
+    out_path = os.path.join("out", "subclassification_reports", f'{model_name}_{task_name}_subclassification_report.txt')
 
     with open(out_path, 'w') as file:
                 file.write(report)
+
+    # save confusion matrix as well:
+    save_conf_matrix(model_name, np.array(test_data[label_col], y_pred, labels, task_name))
+
 
 def main():
 
@@ -275,12 +294,12 @@ def main():
         model = SubclassModel(model_architecture, class_weights, lr=args['lr'], weight_decay=0.01)
 
         # set callback & early stopping:
-        check_path = os.path.join('out', 'checkpoints')
+        check_path = os.path.join('out', 'subclassification_checkpoints')
         os.makedirs(check_path, exist_ok=True)
         checkpoint_callback = ModelCheckpoint(
                                     dirpath=os.path.join(check_path, model_name),
                                     monitor="val_loss",
-                                    filename=file_name+"-{epoch:02d}-{val_loss:.2f}-{val_acc:.2f}",
+                                    filename=args['savefile_suffix']+"-{epoch:02d}-{val_loss:.2f}-{val_acc:.2f}",
                                     save_top_k=2,
                                     mode="min",
                                     )
@@ -304,10 +323,8 @@ def main():
         all_preds_batches = trainer.predict(model, test_loader)
         all_preds = torch.cat(all_preds_batches).cpu().numpy()
 
-        # save classification report
-        save_classification_report(ds_splits['test'], args['label'], model_name, all_preds)
-
-        # save confusion matrix
+        # save classification report + confusion matrix
+        save_results(ds_splits['test'], all_preds, model_name, args['subclass_label'], args['savefile_suffix'])
 
         # trainer needs to run in the main script!!!
 
