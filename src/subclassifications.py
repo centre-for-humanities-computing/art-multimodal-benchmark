@@ -1,23 +1,23 @@
 import datasets
 import numpy as np
 import os
-from PIL import Image
-from datasets import Image as Image_ds
-from datasets import ClassLabel, Features
+from datasets import ClassLabel
 import pandas as pd 
 import torch
-from tqdm import tqdm
-from collections import Counter
 import os
-from torch import optim, nn, utils, Tensor
-from torchvision.transforms import ToTensor
+from torch import optim, nn, utils
+from torch.utils.data import Dataset
 import lightning as L
 from lightning.pytorch.callbacks import ModelCheckpoint
-from lightning.pytorch.loggers.tensorboard import TensorBoardLogger
+#from lightning.pytorch.loggers.tensorboard import TensorBoardLogger
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from torch.utils.data import DataLoader
 from sklearn.metrics import classification_report
 from torchmetrics.classification import ConfusionMatrix
+import argparse
+import random
+import math
+import matplotlib.pyplot as plt
 
 def argument_parser():
 
@@ -26,10 +26,10 @@ def argument_parser():
     parser.add_argument('--dataset', type=str, help='name of HuggingFace dataset') 
     parser.add_argument('--subclasses', nargs='+', help= 'List of classes to run subclassification on')
     parser.add_argument('--subclass_label', type=str, help='whether chosen subclassification task is for genre, styles or artists')
-    parser.add_argument('--hidden_layer_size', stype=float, help= 'size of hidden layer in clf model')
+    parser.add_argument('--hidden_layer_size', type=int, help= 'size of hidden layer in clf model')
     parser.add_argument('--epochs', type=int, help="how many epochs to run the model for")
     parser.add_argument('--batch_size', type=int)
-    parser.add_argument('--lr', type=int, help='learning rate')
+    parser.add_argument('--lr', type=float, help='learning rate')
     parser.add_argument('--model_names', nargs='+', help='list of models to run classification task with')
     parser.add_argument('--savefile_suffix', type=str, help='suffix to add to saved files to identify classification task')
     args = vars(parser.parse_args())
@@ -71,12 +71,12 @@ def filter_data(ds, label, subclassification_task, seed):
     ds_subset = remap_features(ds, ds_subset, label)
 
     # split into train, val and test: 
-    ds_split = ds_subset.train_test_split(test_size=0.2, seed=seed, stratify_by_column = label)
+    ds_split = ds_subset.train_test_split(test_size=0.3, seed=seed, stratify_by_column = label)
     ds_train = ds_split['train']
     ds_test = ds_split['test']
 
     # split test data into test and validation
-    ds_test_split = ds_test.train_test_split(test_size=0.5, seed=seed, stratify_by_column = label)
+    ds_test_split = ds_test.train_test_split(test_size=2/3, seed=seed, stratify_by_column = label)
     ds_val = ds_test_split['train']
     ds_test = ds_test_split['test']
 
@@ -168,7 +168,7 @@ class SubclassModel(L.LightningModule):
 
     def training_step(self, batch, batch_idx):
         X, y = batch 
-        output = model(X)
+        output = self(X)
         loss = self.loss_fn(output, y)
         acc = (output.argmax(1) == y).float().mean()
 
@@ -182,7 +182,7 @@ class SubclassModel(L.LightningModule):
     # this defines the validation loop
     def validation_step(self, batch, batch_idx):
         X, y = batch 
-        output = model(X)
+        output = self(X)
         loss = self.loss_fn(output, y)
         acc = (output.argmax(1) == y).float().mean()
         self.log('val_loss', loss)
@@ -191,7 +191,7 @@ class SubclassModel(L.LightningModule):
     # lightning automatically runs testing with torch.no_grad() and model.eval()
     def test_step(self, batch, batch_idx):
         X, y = batch 
-        output = model(X)
+        output = self(X)
         loss = self.loss_fn(output, y)
         acc = (output.argmax(1) == y).float().mean()
         self.log('test_loss', loss)
@@ -214,19 +214,56 @@ class SubclassModel(L.LightningModule):
                     "monitor": "val_loss",},
                 }
 
-def save_conf_matrix(model_name, y_true, y_pred, clf_task, labels, task_name):
+def save_conf_matrix(model_name, y_true, y_pred, labels, task_name):
 
     y_true = torch.tensor(y_true)
     y_pred = torch.tensor(y_pred)
 
     num_labels = len(labels)
-    confmat = ConfusionMatrix(task="multiclass", num_labels=num_labels)
-    confmat.update(y_pred, y_true)
+    confmat = ConfusionMatrix(task="multiclass", num_classes=num_labels, normalize="true")
+    confmat(y_pred, y_true)
     fig, ax = confmat.plot(add_text = True, labels = labels)
 
     os.makedirs(os.path.join('out', 'subclassification_conf_matrices'), exist_ok=True)
     out_path = os.path.join("out", "subclassification_conf_matrices", f'{model_name}_{task_name}_confusion_matrix.png')
     fig.savefig(out_path, dpi=300, bbox_inches="tight")
+
+def plot_misclassifications(model_name, y_true, y_pred, test_data, task_name, label_col, num_examples = 20):
+
+    misclass_indices = np.where(np.array(y_true) != np.array(y_pred))[0]
+    #misclassified = test_data.select(misclass_indices)
+
+    # randomly select indices
+    #selected_indices = random.sample(indices, min(num_examples, len(indices)))
+
+    selected_indices = random.sample(list(misclass_indices), min(num_examples, len(misclass_indices)))
+
+    # determine grid size
+    cols = min(5, len(selected_indices))  # max 5 images per row
+    rows = math.ceil(len(selected_indices) / cols)
+
+    # plot the images
+    plt.figure(figsize=(cols * 3, rows * 3))
+
+    for i, idx in enumerate(selected_indices):
+        img = test_data[idx]['image']  # assume PIL.Image
+        true_label = test_data.features[label_col].int2str(int(y_true[idx]))
+        pred_label = test_data.features[label_col].int2str(int(y_pred[idx]))
+
+        plt.subplot(rows, cols, i + 1)
+        plt.imshow(img)
+        plt.axis('off')
+        plt.title(f"T: {true_label}\nP: {pred_label}", fontsize=10)
+
+    plt.suptitle(f"{task_name}")
+    plt.tight_layout()
+    
+    os.makedirs(os.path.join('out', 'misclassified_examples_subclassifications'), exist_ok=True)
+    save_path = os.path.join('out', 'misclassified_examples_subclassifications', f"{model_name}_{task_name}_misclassified.png")
+
+    # Save figure
+    plt.savefig(save_path, dpi=300, bbox_inches="tight")
+    plt.close()
 
 def save_results(test_data, y_pred, model_name, label_col, task_name):
 
@@ -237,7 +274,7 @@ def save_results(test_data, y_pred, model_name, label_col, task_name):
         - test_data: huggingface ds with test data
         - feature_col: label of dataset classified, e.g., 'genre'
         - embedding_col: name of column containing image embeddings
-        - predicted_classes: predicted y labels
+        - y_pred: predicted y labels
 
     '''
     # FIX THIS? 
@@ -246,7 +283,7 @@ def save_results(test_data, y_pred, model_name, label_col, task_name):
 
     # save classification report for y_true and y_pred
     report = classification_report(np.array(test_data[label_col]),
-                           predicted_classes, target_names = target_names)
+                           y_pred, target_names = target_names)
     
     # save classification report
     os.makedirs(os.path.join('out', 'subclassification_reports'), exist_ok=True)
@@ -256,8 +293,10 @@ def save_results(test_data, y_pred, model_name, label_col, task_name):
                 file.write(report)
 
     # save confusion matrix as well:
-    save_conf_matrix(model_name, np.array(test_data[label_col], y_pred, labels, task_name))
+    save_conf_matrix(model_name, np.array(test_data[label_col]), y_pred, target_names, task_name)
 
+    # save examples of misclassified images
+    plot_misclassifications(model_name, np.array(test_data[label_col]), y_pred, test_data, task_name, label_col)
 
 def main():
 
@@ -272,7 +311,7 @@ def main():
 
     # subset dataset based on chosen subclassification task
     classification_task = args['subclasses']
-    ds_splits = filter_data(ds, args['subclass_label'], classification_task, 2830)
+    ds_splits = filter_data(ds_full, args['subclass_label'], classification_task, 2830)
 
     batch_size = args['batch_size']
 
@@ -280,15 +319,15 @@ def main():
     for model_name in args['model_names']:
          # create dataloaders
         full_embedding_pt = torch.load(os.path.join('data', 'filtered_embeddings_FINAL', model_name, f'{model_name}_all_splits.pt'))
-        train_loader, inp_size = create_dataloader(ds_splits, full_embedding_pt, label, 'train', batch_size, 'old_indices')
-        val_loader, _ = create_dataloader(ds_splits, full_embedding_pt, label, 'val', batch_size, 'old_indices')
-        test_loader, _ = create_dataloader(ds_splits, full_embedding_pt, label, 'test', batch_size, 'old_indices')
+        train_loader, inp_size = create_dataloader(ds_splits, full_embedding_pt, args['subclass_label'], 'train', batch_size, 'old_indices')
+        val_loader, _ = create_dataloader(ds_splits, full_embedding_pt, args['subclass_label'], 'val', batch_size, 'old_indices')
+        test_loader, _ = create_dataloader(ds_splits, full_embedding_pt, args['subclass_label'], 'test', batch_size, 'old_indices')
 
         # create model
-        model_architecture = build_model(args['hidden_layer_size'], args['label'], inp_size, 0.3, ds_splits)
+        model_architecture = build_model(args['hidden_layer_size'], args['subclass_label'], inp_size, 0.3, ds_splits)
 
         # define class weights
-        class_weights = define_class_weights(ds_splits, args['label'])
+        class_weights = define_class_weights(ds_splits, args['subclass_label'])
 
         # define lightning model
         model = SubclassModel(model_architecture, class_weights, lr=args['lr'], weight_decay=0.01)
@@ -312,6 +351,7 @@ def main():
                     callbacks=[checkpoint_callback, early_stopping],
                     accelerator="gpu" if torch.cuda.is_available() else "cpu",
                     devices="auto",
+                    deterministic=True
                     )
 
         trainer.fit(model, train_loader, val_loader)

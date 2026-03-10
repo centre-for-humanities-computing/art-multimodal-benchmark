@@ -1,0 +1,8 @@
+                  precision    recall  f1-score   support
+
+          Cubism       0.97      0.89      0.93        72
+Synthetic_Cubism       0.69      0.90      0.78        20
+
+        accuracy                           0.89        92
+       macro avg       0.83      0.89      0.86        92
+    weighted avg       0.91      0.89      0.90        92

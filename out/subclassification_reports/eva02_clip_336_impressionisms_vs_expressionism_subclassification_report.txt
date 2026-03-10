@@ -1,0 +1,9 @@
+                    precision    recall  f1-score   support
+
+     Expressionism       0.79      0.91      0.84       449
+     Impressionism       0.94      0.88      0.91      1648
+Post_Impressionism       0.73      0.76      0.74       707
+
+          accuracy                           0.86      2804
+         macro avg       0.82      0.85      0.83      2804
+      weighted avg       0.86      0.86      0.86      2804
