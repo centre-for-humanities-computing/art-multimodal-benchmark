@@ -8,3 +8,4 @@ out/history/
 cuda-keyring_1.1-1_all.deb
 setup_eva.sh 
 src/classify_in_modules.py
+lightning_logs/

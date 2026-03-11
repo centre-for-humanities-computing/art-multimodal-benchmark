@@ -18,6 +18,8 @@ import argparse
 import random
 import math
 import matplotlib.pyplot as plt
+from sklearn.model_selection import StratifiedKFold
+from torchmetrics.classification import MulticlassPrecision, MulticlassRecall, MulticlassF1Score
 
 def argument_parser():
 
@@ -26,10 +28,10 @@ def argument_parser():
     parser.add_argument('--dataset', type=str, help='name of HuggingFace dataset') 
     parser.add_argument('--subclasses', nargs='+', help= 'List of classes to run subclassification on')
     parser.add_argument('--subclass_label', type=str, help='whether chosen subclassification task is for genre, styles or artists')
-    parser.add_argument('--hidden_layer_size', type=int, help= 'size of hidden layer in clf model')
-    parser.add_argument('--epochs', type=int, help="how many epochs to run the model for")
-    parser.add_argument('--batch_size', type=int)
-    parser.add_argument('--lr', type=float, help='learning rate')
+    parser.add_argument('--hidden_layer_size', type=int, help= 'size of hidden layer in clf model', default=200)
+    parser.add_argument('--epochs', type=int, help="how many epochs to run the model for", default=30)
+    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--lr', type=float, help='learning rate', default=0.01)
     parser.add_argument('--model_names', nargs='+', help='list of models to run classification task with')
     parser.add_argument('--savefile_suffix', type=str, help='suffix to add to saved files to identify classification task')
     args = vars(parser.parse_args())
@@ -60,7 +62,7 @@ def remap_features(ds_original, ds_filtered, label):
 
     return ds_filtered
 
-def filter_data(ds, label, subclassification_task, seed):
+def filter_data(ds, label, subclassification_task, seed, cv):
     ds = ds.add_column('old_indices', range(len(ds)))
 
     # find the rows that matches the subclassification task
@@ -70,20 +72,29 @@ def filter_data(ds, label, subclassification_task, seed):
     # remap labels to fit to new number of classes for subclassification task
     ds_subset = remap_features(ds, ds_subset, label)
 
-    # split into train, val and test: 
-    ds_split = ds_subset.train_test_split(test_size=0.3, seed=seed, stratify_by_column = label)
-    ds_train = ds_split['train']
-    ds_test = ds_split['test']
+    if cv==True:
+        ds_split = ds_subset.train_test_split(test_size=0.2, seed=seed, stratify_by_column=label)
 
-    # split test data into test and validation
-    ds_test_split = ds_test.train_test_split(test_size=2/3, seed=seed, stratify_by_column = label)
-    ds_val = ds_test_split['train']
-    ds_test = ds_test_split['test']
+        ds_splits = {
+            'train': ds_split['train'], # train/val set
+            'test': ds_split['test'] # hold-out test set - we're not touching this until the end
+            }
+    
+    else:
+        # split into train, val and test: 
+        ds_split = ds_subset.train_test_split(test_size=0.3, seed=seed, stratify_by_column = label)
+        ds_train = ds_split['train']
+        ds_test = ds_split['test']
 
-    ds_splits = {
-            'train': ds_train,
-            'test': ds_test,
-            'val': ds_val}
+        # split test data into test and validation
+        ds_test_split = ds_test.train_test_split(test_size=2/3, seed=seed, stratify_by_column = label)
+        ds_val = ds_test_split['train']
+        ds_test = ds_test_split['test']
+
+        ds_splits = {
+                'train': ds_train,
+                'test': ds_test,
+                'val': ds_val}
 
     return ds_splits
 
@@ -136,7 +147,7 @@ def build_model(hidden_layer_size, label, inp_size, dropout_p, ds_splits): # do 
         nn.ReLU(),
         nn.Dropout(p=dropout_p),
         nn.Linear(in_features=hidden_layer_size, out_features=num_classes)
-            ) ### MAYBE DELETE TO(DEVICE) PART???????
+            )
 
     return model 
 
@@ -149,18 +160,29 @@ def define_class_weights(ds_splits, label):
     return class_weights
 
 class SubclassModel(L.LightningModule):
-    def __init__(self, model, class_weights, lr, weight_decay): # options to set some default parameters here
+    def __init__(self, model, class_weights, lr, weight_decay, num_classes): # options to set some default parameters here
 
         # not really sure what this does:
         super().__init__()
 
         self.model = model
         self.lr = lr 
-        self.weight_decay = weight_decay 
+        self.weight_decay = weight_decay
+        self.num_classes 
 
         # buffer makes sure that class weights moves automatically to GPU
         self.register_buffer('class_weights', class_weights)
         self.loss_fn = nn.CrossEntropyLoss(weight=self.class_weights)
+
+        # define validation metrics
+        self.val_precision = MulticlassPrecision(num_classes=num_classes, average="macro")
+        self.val_recall = MulticlassRecall(num_classes=num_classes, average="macro")
+        self.val_f1 = MulticlassF1Score(num_classes=num_classes, average="macro")
+
+        # define test metrics
+        self.test_precision = MulticlassPrecision(num_classes=num_classes, average="macro")
+        self.test_recall = MulticlassRecall(num_classes=num_classes, average="macro")
+        self.test_f1 = MulticlassF1Score(num_classes=num_classes, average="macro")
     
     # not exactly sure what this part is
     def forward(self, x):
@@ -179,23 +201,43 @@ class SubclassModel(L.LightningModule):
 
         return loss 
     
-    # this defines the validation loop
+    # lightning automatically runs testing + validation with torch.no_grad() and model.eval()
     def validation_step(self, batch, batch_idx):
         X, y = batch 
         output = self(X)
         loss = self.loss_fn(output, y)
-        acc = (output.argmax(1) == y).float().mean()
+
+        preds = output.argmax(1)
+
+        acc = (preds == y).float().mean()
+
+        precision = self.val_precision(preds, y)
+        recall = self.val_recall(preds, y)
+        f1 = self.val_f1(preds, y)
+
         self.log('val_loss', loss)
         self.log('val_acc', acc)
-    
-    # lightning automatically runs testing with torch.no_grad() and model.eval()
+        self.log('val_precision', precision)
+        self.log('val_recall', recall)
+        self.log('val_f1', f1)
+
     def test_step(self, batch, batch_idx):
         X, y = batch 
         output = self(X)
         loss = self.loss_fn(output, y)
-        acc = (output.argmax(1) == y).float().mean()
+
+        preds = output.argmax(1)
+
+        acc = (preds == y).float().mean()
+        precision = self.test_precision(preds, y)
+        recall = self.test_recall(preds, y)
+        f1 = self.test_f1(preds, y)
+
         self.log('test_loss', loss)
         self.log('test_acc', acc) 
+        self.log('test_precision', precision)
+        self.log('test_recall', recall)
+        self.log('test_f1', f1)
     
     def predict_step(self, batch, batch_idx):
         X, y = batch
@@ -222,7 +264,7 @@ def save_conf_matrix(model_name, y_true, y_pred, labels, task_name):
     num_labels = len(labels)
     confmat = ConfusionMatrix(task="multiclass", num_classes=num_labels, normalize="true")
     confmat(y_pred, y_true)
-    fig, ax = confmat.plot(add_text = True, labels = labels)
+    fig, ax = confmat.plot(add_text = True, labels = labels, cmap='winter')
 
     os.makedirs(os.path.join('out', 'subclassification_conf_matrices'), exist_ok=True)
     out_path = os.path.join("out", "subclassification_conf_matrices", f'{model_name}_{task_name}_confusion_matrix.png')
@@ -309,64 +351,148 @@ def main():
     # load full dataset with all images from disk
     ds_full = datasets.load_from_disk(os.path.join('data', data_name))
 
-    # subset dataset based on chosen subclassification task
+    # subset dataset based on chosen subclassification task (if cv=True, ds_splits contains only train+test split)
     classification_task = args['subclasses']
-    ds_splits = filter_data(ds_full, args['subclass_label'], classification_task, 2830)
-
     batch_size = args['batch_size']
-
-    # loop over model(s) to be tested for the classification task
-    for model_name in args['model_names']:
-         # create dataloaders
-        full_embedding_pt = torch.load(os.path.join('data', 'filtered_embeddings_FINAL', model_name, f'{model_name}_all_splits.pt'))
-        train_loader, inp_size = create_dataloader(ds_splits, full_embedding_pt, args['subclass_label'], 'train', batch_size, 'old_indices')
-        val_loader, _ = create_dataloader(ds_splits, full_embedding_pt, args['subclass_label'], 'val', batch_size, 'old_indices')
-        test_loader, _ = create_dataloader(ds_splits, full_embedding_pt, args['subclass_label'], 'test', batch_size, 'old_indices')
-
-        # create model
-        model_architecture = build_model(args['hidden_layer_size'], args['subclass_label'], inp_size, 0.3, ds_splits)
-
-        # define class weights
-        class_weights = define_class_weights(ds_splits, args['subclass_label'])
-
-        # define lightning model
-        model = SubclassModel(model_architecture, class_weights, lr=args['lr'], weight_decay=0.01)
-
-        # set callback & early stopping:
-        check_path = os.path.join('out', 'subclassification_checkpoints')
-        os.makedirs(check_path, exist_ok=True)
-        checkpoint_callback = ModelCheckpoint(
-                                    dirpath=os.path.join(check_path, model_name),
-                                    monitor="val_loss",
-                                    filename=args['savefile_suffix']+"-{epoch:02d}-{val_loss:.2f}-{val_acc:.2f}",
-                                    save_top_k=2,
-                                    mode="min",
-                                    )
+    label = args['subclass_label']
+    ds_splits = filter_data(ds_full, label, classification_task, 2830, cv = args['cv']) # not sure this argument will work
         
-        early_stopping = EarlyStopping(monitor="val_loss", patience=5, mode="min", verbose=False)
+    # not sure if this syntax will work?
+    if args['cv'] == True:
 
-        # fit model
-        trainer = L.Trainer(
-                    max_epochs=args['epochs'],
-                    callbacks=[checkpoint_callback, early_stopping],
-                    accelerator="gpu" if torch.cuda.is_available() else "cpu",
-                    devices="auto",
-                    deterministic=True
-                    )
+        skf = StratifiedKFold(n_splits = 5, shuffle=True, random_state=2830) # shuffle=true?
 
-        trainer.fit(model, train_loader, val_loader)
+        ds_train_val = ds_splits['train']
 
-        # test
-        trainer.test(model, test_loader)
+        # get labels + indices
+        labels = np.array(ds_train_val[label])
+        indices = np.arange(len(ds_train_val))
 
-        # + predict
-        all_preds_batches = trainer.predict(model, test_loader)
-        all_preds = torch.cat(all_preds_batches).cpu().numpy()
+        fold_scores = []
 
-        # save classification report + confusion matrix
-        save_results(ds_splits['test'], all_preds, model_name, args['subclass_label'], args['savefile_suffix'])
+        for fold, (train_idx, val_idx) in enumerate(skf.split(indices, labels)):
 
-        # trainer needs to run in the main script!!!
+            # monitor folds
+            print(f"Fold {fold+1}")
+
+            ds_train = ds_train_val.select(train_idx.tolist())
+            ds_val = train_val_ds.select(val_idx.tolist())
+
+            ds_splits_for_cv = {
+                'train': ds_train,
+                'val': ds_val}
+            
+            for model_name in args['model_names']:
+                full_embedding_pt = torch.load(os.path.join('data', 'filtered_embeddings_FINAL', model_name, f'{model_name}_all_splits.pt'))
+                train_loader, inp_size = create_dataloader(ds_splits_for_cv, full_embedding_pt, label, 'train', batch_size, 'old_indices')
+                val_loader, _ = create_dataloader(ds_splits_for_cv, full_embedding_pt, label, 'val', batch_size, 'old_indices')
+                test_loader, _ = create_dataloader(ds_splits, full_embedding_pt, label, 'test', batch_size, 'old_indices')
+
+                model_architecture = build_model(args['hidden_layer_size'], label, inp_size, 0.3, ds_splits_for_cv)
+                
+                # define class weights
+                class_weights = define_class_weights(ds_splits_for_cv, label)
+
+                # define lightning model
+                model = SubclassModel(model_architecture, class_weights, lr=args['lr'], weight_decay=0.01, num_classes = ds_splits['train'].features[label].num_classes)
+
+                check_path = os.path.join('out', 'subclassification_checkpoints')
+                os.makedirs(check_path, exist_ok=True)
+
+                # set callback & earlystopping
+                checkpoint_callback = ModelCheckpoint(
+                                        dirpath=os.path.join(check_path, model_name),
+                                        monitor="val_loss",
+                                        filename=args['savefile_suffix']+"-{epoch:02d}-{val_loss:.2f}-{val_acc:.2f}",
+                                        save_top_k=2,
+                                        mode="min",
+                                        )
+                
+                early_stopping = EarlyStopping(monitor="val_loss", patience=5, mode="min", verbose=False)
+
+                # fit model
+                trainer = L.Trainer(
+                            max_epochs=args['epochs'],
+                            callbacks=[checkpoint_callback, early_stopping],
+                            accelerator="gpu" if torch.cuda.is_available() else "cpu",
+                            devices="auto",
+                            deterministic=True
+                            )
+                
+                trainer.fit(model, train_loader, val_loader)
+
+                # use best model across epochs
+                best_model_path = checkpoint_callback.best_model_path
+
+                model = SubclassModel.load_from_checkpoint(best_model_path)
+
+                val_metrics = trainer.validate(model, val_loader)
+
+                # save across folds
+                fold_scores.append({
+                    "acc": val_metrics[0]["val_acc"],
+                    "precision": val_metrics[0]["val_precision"],
+                    "recall": val_metrics[0]["val_recall"],
+                    "f1": val_metrics[0]["val_f1"]
+                })
+
+            
+
+
+    else:
+
+        # loop over model(s) to be tested for the classification task
+        for model_name in args['model_names']:
+            # create dataloaders
+            full_embedding_pt = torch.load(os.path.join('data', 'filtered_embeddings_FINAL', model_name, f'{model_name}_all_splits.pt'))
+            train_loader, inp_size = create_dataloader(ds_splits, full_embedding_pt, label, 'train', batch_size, 'old_indices')
+            val_loader, _ = create_dataloader(ds_splits, full_embedding_pt, label, 'val', batch_size, 'old_indices')
+            test_loader, _ = create_dataloader(ds_splits, full_embedding_pt, label, 'test', batch_size, 'old_indices')
+
+            # create model
+            model_architecture = build_model(args['hidden_layer_size'], label, inp_size, 0.3, ds_splits)
+
+            # define class weights
+            class_weights = define_class_weights(ds_splits, label)
+
+            # define lightning model
+            model = SubclassModel(model_architecture, class_weights, lr=args['lr'], weight_decay=0.01, num_classes=ds_splits['train'].features[label].num_classes)
+
+            # set callback & early stopping:
+            check_path = os.path.join('out', 'subclassification_checkpoints')
+            os.makedirs(check_path, exist_ok=True)
+            checkpoint_callback = ModelCheckpoint(
+                                        dirpath=os.path.join(check_path, model_name),
+                                        monitor="val_loss",
+                                        filename=args['savefile_suffix']+"-{epoch:02d}-{val_loss:.2f}-{val_acc:.2f}",
+                                        save_top_k=2,
+                                        mode="min",
+                                        )
+            
+            early_stopping = EarlyStopping(monitor="val_loss", patience=5, mode="min", verbose=False)
+
+            # fit model
+            trainer = L.Trainer(
+                        max_epochs=args['epochs'],
+                        callbacks=[checkpoint_callback, early_stopping],
+                        accelerator="gpu" if torch.cuda.is_available() else "cpu",
+                        devices="auto",
+                        deterministic=True
+                        )
+
+            trainer.fit(model, train_loader, val_loader)
+
+            # test
+            trainer.test(model, test_loader)
+
+            # + predict
+            all_preds_batches = trainer.predict(model, test_loader)
+            all_preds = torch.cat(all_preds_batches).cpu().numpy()
+
+            # save classification report + confusion matrix
+            save_results(ds_splits['test'], all_preds, model_name, label, args['savefile_suffix'])
+
+            # trainer needs to run in the main script!!!
 
 if __name__ == '__main__':
     main()
