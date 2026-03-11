@@ -1,0 +1,8 @@
+                   precision    recall  f1-score   support
+
+peter-paul-rubens       1.00      0.87      0.93        15
+        rembrandt       0.98      1.00      0.99       113
+
+         accuracy                           0.98       128
+        macro avg       0.99      0.93      0.96       128
+     weighted avg       0.98      0.98      0.98       128

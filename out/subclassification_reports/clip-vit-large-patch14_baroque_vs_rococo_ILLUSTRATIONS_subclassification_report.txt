@@ -1,0 +1,8 @@
+              precision    recall  f1-score   support
+
+     Baroque       0.97      1.00      0.98       156
+      Rococo       1.00      0.29      0.44         7
+
+    accuracy                           0.97       163
+   macro avg       0.98      0.64      0.71       163
+weighted avg       0.97      0.97      0.96       163
