@@ -342,6 +342,31 @@ def save_results(test_data, y_pred, model_name, label_col, task_name):
     # save examples of misclassified images
     plot_misclassifications(model_name, np.array(test_data[label_col]), y_pred, test_data, task_name, label_col)
 
+def save_model_scores(model_scores, savefile_suffix):
+        rows = []
+
+        for model_name, scores in model_scores.items():
+            
+            df = pd.DataFrame(scores)
+
+            row = {
+                "model": model_name,
+                "accuracy": f"{df['acc'].mean():.3f} ({df['acc'].std():.3f})",
+                "precision": f"{df['precision'].mean():.3f} ({df['precision'].std():.3f})",
+                "recall": f"{df['recall'].mean():.3f} ({df['recall'].std():.3f})",
+                "macro_f1": f"{df['f1'].mean():.3f} ({df['f1'].std():.3f})",
+            }
+
+            rows.append(row)
+
+        results_table = pd.DataFrame(rows).set_index("model")
+        print(results_table)
+
+        # Save results_table to a text file
+        save_path = os.path.join('out', 'subclassification_reports')
+        with open(os.path.join(save_path, f'{model_name}_{args['savefile_suffix']}_CV_results.txt'), 'w') as f:
+            f.write(results_table.to_string())
+
 def main():
 
     L.seed_everything(2830)
@@ -456,29 +481,7 @@ def main():
         
             del ds_splits_for_cv, ds_train, ds_test
         
-        rows = []
-
-        for model_name, scores in model_scores.items():
-            
-            df = pd.DataFrame(scores)
-
-            row = {
-                "model": model_name,
-                "accuracy": f"{df['acc'].mean():.3f} ({df['acc'].std():.3f})",
-                "precision": f"{df['precision'].mean():.3f} ({df['precision'].std():.3f})",
-                "recall": f"{df['recall'].mean():.3f} ({df['recall'].std():.3f})",
-                "macro_f1": f"{df['f1'].mean():.3f} ({df['f1'].std():.3f})",
-            }
-
-            rows.append(row)
-
-        results_table = pd.DataFrame(rows).set_index("model")
-        print(results_table)
-
-        # Save results_table to a text file
-        save_path = os.path.join('out', 'subclassification_reports')
-        with open(os.path.join(save_path, f'{model_name}_{args['savefile_suffix']}_CV_results.txt'), 'w') as f:
-            f.write(results_table.to_string())
+        save_model_scores(model_scores, args['savefile_suffix'])
 
             
     else:
