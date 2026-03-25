@@ -384,9 +384,8 @@ def main():
     classification_task = args['subclasses']
     batch_size = args['batch_size']
     label = args['subclass_label']
-    ds_splits = filter_data(ds_full, label, classification_task, 2830, cv = args['cv']) # not sure this argument will work
+    ds_splits = filter_data(ds_full, label, classification_task, 2830, cv = args['cv']) 
         
-    # not sure if this syntax will work?
     if args['cv']:
 
         skf = StratifiedKFold(n_splits = 5, shuffle=True, random_state=2830) # shuffle=true?

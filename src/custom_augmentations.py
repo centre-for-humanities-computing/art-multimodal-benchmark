@@ -1,24 +1,53 @@
 import datasets
 import numpy as np
-from PIL import Image
-import torch
-from tqdm import tqdm
 import os
-import matplotlib.pyplot as plt 
+from PIL import Image
+#import torch
+from tqdm import tqdm
+from collections import Counter
 import torchvision.transforms as T
-from PIL import ImageOps
+import matplotlib.pyplot as plt
+import random
+import math
+from PIL import Image, ImageDraw, ImageFilter, ImageOps
 import io
-from PIL import Image, ImageDraw, ImageFilter
+import cv2
 
-# add brown boarder, simulating a frame
-class AddFrame:
-    def __init__(self, border_size=150, color=(70, 55, 35)): # default settings
-        self.border_size = border_size
-        self.color = color
+class AddLayeredFrame:
 
-    def __call__(self, img): # (making class object behave like a function) (torchvision Compose expects callable objects)
-        return ImageOps.expand(img, border=self.border_size, fill=self.color)
+    def __init__(self, border_sizes=(100, 100, 100), colors=None):
 
+        self.border_sizes = border_sizes
+        if colors is None:
+            # default golden-brown variations (innermost → outermost)
+            self.colors = [
+                (205, 133, 63),  # innermost: golden-sienna
+                (218, 165, 32),  # middle: goldenrod
+                (184, 134, 11)   # outermost: dark golden brown
+            ]
+        else:
+            self.colors = colors
+
+    def __call__(self, img):
+        w, h = img.size
+        total_border = sum(self.border_sizes)  # total size needed for outermost layer
+
+        # Create new canvas large enough for all layers
+        new_w = w + 2 * total_border
+        new_h = h + 2 * total_border
+        canvas = Image.new("RGB", (new_w, new_h))
+
+        # Draw all layers at once
+        offset = 0
+        draw = ImageDraw.Draw(canvas)
+        for size, color in zip(self.border_sizes, self.colors):
+            rect = [offset, offset, new_w - offset - 1, new_h - offset - 1]
+            draw.rectangle(rect, fill=color)
+            offset += size
+
+        # Paste the original image in the center
+        canvas.paste(img, (total_border, total_border))
+        return canvas
 # add JPEG-compression artifacts
 class JPEGCompression:
 
@@ -137,4 +166,33 @@ class AddLightArtifact:
 
         img_np = (img_np * 255).astype(np.uint8)
         return Image.fromarray(img_np)
+
+class RelativeGaussianBlur:
+    def __init__(self, strength=0.02, sigma=None):
+        """
+        strength: fraction of min(width, height) for kernel size
+        sigma: if None, use 0 (OpenCV auto)
+        """
+        self.strength = strength
+        self.sigma = sigma
+
+    def __call__(self, img):
+        # Convert PIL to numpy
+        img_np = np.array(img)
+
+        h, w = img_np.shape[:2]
+
+        # Compute kernel size relative to image
+        k = int(self.strength * min(w, h))
+        k = max(3, k)
+        if k % 2 == 0:
+            k += 1  # must be odd
+
+        # Apply Gaussian blur using OpenCV (fast, even for large kernels)
+        if img_np.ndim == 2:  # grayscale
+            blurred = cv2.GaussianBlur(img_np, (k, k), sigmaX=self.sigma or 0)
+        else:  # RGB
+            blurred = cv2.GaussianBlur(img_np, (k, k), sigmaX=self.sigma or 0)
+
+        return Image.fromarray(blurred)
     
