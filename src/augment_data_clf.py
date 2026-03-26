@@ -25,7 +25,7 @@ import torchvision.transforms as T
 import mteb
 
 from subclf_updated import remap_features, create_dataloader, build_model, define_class_weights, SubclassModel, save_conf_matrix, plot_misclassifications, save_results, remap_features, filter_data
-from custom_augmentations import AddLayeredFrame, JPEGCompression, AddVignette, AddGrain, AddLightArtifact, RelativeGaussianBlur
+from custom_augmentations import AddLayeredFrame, JPEGCompression, AddVignette, AddGrain, AddLightArtifact, RelativeGaussianBlur, FixedContrast, CannySketch, PencilSketchCustom
 
 def argument_parser():
 
@@ -110,9 +110,9 @@ def embeddings_w_eva(test_data, aug):
     # use this information to transform the data
     transforms_model = timm.data.create_transform(**data_config, is_training=False)
 
-    # need to add the augmentation to the transforms as well (ideally before any of the other transforms?)
     transforms_list = []
 
+    # create transforms list - RGB --> AUG --> MODEL_SPECIFIC_PREPROCESSINGS
     # make sure img is rgb WHAT TO DO HERE WITH GRAYSCALE ? 
     transforms_list.append(convert_to_rgb)
     transforms_list.append(aug) # add augmentation to list of transforms
@@ -241,6 +241,18 @@ def aggregate_results(model_scores):
     with open(os.path.join('out', 'test_augmentation_results', 'all_results.txt'), 'w') as f:
         f.write(results_table.to_string())
 
+def filter_test_from_sketches(ds_test):
+
+    illustrations_classes = ['sketch_and_study', 'illustrations']
+
+    no_illu_indices = [idx for idx, a in enumerate(ds_test['genre_str']) if a not in illustrations_classes]
+
+    ds_test_filtered = ds_test.select(no_illu_indices)
+
+    ds_test_filtered = remap_features(ds_test, ds_test_filtered, 'genre')
+
+    return ds_test_filtered
+
 def main():
     L.seed_everything(2830)
 
@@ -251,13 +263,15 @@ def main():
        'weak_blur': RelativeGaussianBlur(strength=0.3, sigma=5), # weak blurring
         'strong_blur': RelativeGaussianBlur(strength=0.7, sigma=7), # stronger blurring
         'grayscale': T.Grayscale(), # grayscale
-        'contrast': T.ColorJitter(contrast = 10), # changing contrasts
+        'contrast': FixedContrast(factor = 10), # changing contrasts
         'frame': AddLayeredFrame(border_sizes=(100, 100, 100)), # frame
         'jpeg_compr': JPEGCompression(quality=6), # jpeg compression
         'vignette': AddVignette(strength = 0.9), # adding vignette
         'weak_grain': AddGrain(std=0.3),
         'strong_grain': AddGrain(std=0.7),
-        'light_artifact': AddLightArtifact(max_intensity=0.4, max_radius_ratio=0.4)
+        'light_artifact': AddLightArtifact(max_intensity=0.4, max_radius_ratio=0.4),
+        'Canny_sketch': CannySketch(),
+        'pencil_sketch': PencilSketchCustom()
     }
 
     # load data
@@ -268,178 +282,187 @@ def main():
 
     # add indices as column
     #ds = ds.add_column('old_indices', range(len(ds)))
-    subset = ['edouard-manet', 'henri-de-toulouse-lautrec']
+    subset = [
+    "camille-pissarro",
+    "paul-cezanne",
+    "pierre-auguste-renoir",
+    "alfred-sisley",
+    "mary-cassatt",
+    "berthe-morisot",
+    "georges-seurat",
+    "edouard-manet",
+    "henri-de-toulouse-lautrec",
+    "claude-monet",
+    "eugene-boudin"
+]
     ds_full = filter_data(ds, 'artist', subset, 2830, cv = True)
     batch_size = args['batch_size']
 
     # Initialize model_scores dictionary
     model_scores = {}
 
-    for label in args['labels']:
-        model_scores[label] = {}
+    label = 'artist'
+
+    for model_name in args['model_names']:
+        # Start with all augmentations
+        aug_dict = {aug_name: [] for aug_name in augmentations.keys()}
+        # Add the "no augmentation" baseline
+        aug_dict['no_aug'] = []
+        # Assign to the model
+        model_scores[model_name] = aug_dict
+
+    skf = StratifiedKFold(n_splits = 5, shuffle=True, random_state=2830)
+    y = np.array(ds_full[label])
+    indices = np.arange(len(ds_full))
+
+    for fold, (train_idx, val_idx) in enumerate(skf.split(indices, y)):
+
+    # monitor folds
+        print(f"Fold {fold+1}")
+
+        ds_train = ds_full.select(train_idx.tolist())
+        ds_test = ds_full.select(val_idx.tolist())
+
+        ds_test = filter_test_from_sketches(ds_test)
+
+        ds_splits_for_cv = {
+            'train': ds_train,
+            'test': ds_test}
+
         for model_name in args['model_names']:
-            # Start with all augmentations
-            aug_dict = {aug_name: [] for aug_name in augmentations.keys()}
-            # Add the "no augmentation" baseline
-            aug_dict['no_aug'] = []
-            # Assign to the model
-            model_scores[label][model_name] = aug_dict
 
-    # STRATIFY BY LABEL
-    for label in args['labels']:
+            # create folder for saving results:
 
-        skf = StratifiedKFold(n_splits = 5, shuffle=True, random_state=2830)
-        y = np.array(ds_full[label])
-        indices = np.arange(len(ds_full))
+            os.makedirs(os.path.join('out', 'test_augmentation_results'), exist_ok=True)
+            os.makedirs(os.path.join('out', 'test_augmentation_results', model_name), exist_ok=True)
 
-        for fold, (train_idx, val_idx) in enumerate(skf.split(indices, y)):
+            out_folder = os.path.join('out', 'test_augmentation_results', model_name)
 
-        # monitor folds
-            print(f"Fold {fold+1}")
-
-            ds_train = ds_full.select(train_idx.tolist())
-            ds_test = ds_full.select(val_idx.tolist())
-
-            ds_splits_for_cv = {
-                'train': ds_train,
-                'test': ds_test}
-
-            for model_name in args['model_names']:
-
-                # create folder for saving results:
-
-                os.makedirs(os.path.join('out', 'test_augmentation_results'), exist_ok=True)
-                os.makedirs(os.path.join('out', 'test_augmentation_results', model_name), exist_ok=True)
-
-                out_folder = os.path.join('out', 'test_augmentation_results', model_name)
-
-                full_embedding_pt = torch.load(os.path.join('data', 'filtered_embeddings_FINAL', model_name, f'{model_name}_all_splits.pt'))
-                train_loader, inp_size = create_dataloader(ds_splits_for_cv, full_embedding_pt, label, 'train', batch_size, 'old_indices')
+            full_embedding_pt = torch.load(os.path.join('data', 'filtered_embeddings_FINAL', model_name, f'{model_name}_all_splits.pt'))
+            train_loader, inp_size = create_dataloader(ds_splits_for_cv, full_embedding_pt, label, 'train', batch_size, 'old_indices')
+            
+            if model_name == 'eva02_clip_336':
+                pass #  
+            
+            else:
+                model_path = add_model_prefix(model_name)
+                try:
+                    model_meta = mteb.get_model_meta(model_path)
+                    print('LOADING MODEL...')
+                    mteb_model = model_meta.load_model()
                 
-                if model_name == 'eva02_clip336':
-                    pass #  
-                
-                else:
-                    model_path = add_model_prefix(model_name)
+                except Exception as e:
+                    print(f'Error loading model: {model_path}, {e}')
+
+            # fit seperate model for each data augmentation
+            for aug_name, aug in augmentations.items(): 
+
+                #embeddings = None
+                if model_name == 'eva02_clip_336':
                     try:
-                        model_meta = mteb.get_model_meta(model_path)
-                        print('LOADING MODEL...')
-                        mteb_model = model_meta.load_model()
+                        embeddings = embeddings_w_eva(ds_splits_for_cv['test'], aug)
                     
                     except Exception as e:
-                        print(f'Error loading model: {model_path}, {e}')
-
-                # fit seperate model for each data augmentation
-                for aug_name, aug in augmentations.items(): 
-
-                    #embeddings = None
-                    if model_name == 'eva02_clip_336':
-                        try:
-                            embeddings = embeddings_w_eva(ds_splits_for_cv['test'], aug)
-                        
-                        except Exception as e:
-                            print(f'Error extraction features, {e}')
-                    
-                    else:
-                        try: 
-                            embeddings = extract_embeddings(ds_splits_for_cv['test'], mteb_model, aug)
-
-                        except Exception as e: 
-                            print(e)
-                        
-                    #if embeddings is None:
-                     #   raise ValueError("No embeddings returned")
-                    
-
-                    # create test dataloader:
-                    test_loader = create_test_loader(ds_splits_for_cv['test'], embeddings, label, batch_size)
-                    model_architecture = build_model(args['hidden_layer_size'], label, inp_size, 0.3, ds_splits_for_cv)
-
-                    # define class weights
-                    class_weights = define_class_weights(ds_splits_for_cv, label)
-
-                    # define lightning model
-                    model = SubclassModel(model_architecture, class_weights, lr=args['lr'], weight_decay=0.01, num_classes = ds_splits_for_cv['train'].features[label].num_classes)
-
-                    trainer = L.Trainer(
-                                    max_epochs=args['epochs'],
-                                    #callbacks=[checkpoint_callback],
-                                    accelerator="gpu" if torch.cuda.is_available() else "cpu",
-                                    devices="auto",
-                                    deterministic=True
-                                        )
-            
-                    trainer.fit(model, train_loader)
-
-                    test_metrics = trainer.test(model, test_loader)
-
-                    # save for fold
-                    model_scores[label][model_name][aug_name].append({
-                        "acc": test_metrics[0]["test_acc"],
-                        "precision": test_metrics[0]["test_precision"],
-                        "recall": test_metrics[0]["test_recall"],
-                        "f1": test_metrics[0]["test_f1"]
-                    })
-
-                    all_preds_batches = trainer.predict(model, test_loader)
-                    all_preds = torch.cat(all_preds_batches).cpu().numpy()
-
-                    if fold == 4:
-                        save_results(
-                            test_data = ds_splits_for_cv['test'],
-                            y_pred = all_preds,
-                            model_name = model_name,
-                            label_col = label,
-                            task_name = f"{aug_name}_fold{fold+1}",
-                            save_folder=out_folder
-                        )
-
-                    #save_model_scores(model_scores, aug_name, out_folder)
-
-                    del embeddings
-                    del test_loader
-                    del model_architecture
-                    del model
-                    del trainer
-                    del test_metrics
-                    del all_preds_batches
-                    del all_preds
-
-                    import gc
-                    gc.collect()
-
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()
+                        print(f'Error extraction features, {e}')
                 
+                else:
+                    try: 
+                        embeddings = extract_embeddings(ds_splits_for_cv['test'], mteb_model, aug)
+
+                    except Exception as e: 
+                        print(e)
+                    
+                #if embeddings is None:
+                    #   raise ValueError("No embeddings returned")
                 
-                # fit model without augmentations: 
-                #test_loader, _ = create_dataloader(ds_splits_for_cv, full_embedding_pt, label, 'test', batch_size, 'old_indices')
+
+                # create test dataloader:
+                test_loader = create_test_loader(ds_splits_for_cv['test'], embeddings, label, batch_size)
                 model_architecture = build_model(args['hidden_layer_size'], label, inp_size, 0.3, ds_splits_for_cv)
+
+                # define class weights
                 class_weights = define_class_weights(ds_splits_for_cv, label)
+
+                # define lightning model
                 model = SubclassModel(model_architecture, class_weights, lr=args['lr'], weight_decay=0.01, num_classes = ds_splits_for_cv['train'].features[label].num_classes)
+
                 trainer = L.Trainer(
-                            max_epochs=args['epochs'],
-                            #callbacks=[checkpoint_callback],
-                            accelerator="gpu" if torch.cuda.is_available() else "cpu",
-                            devices="auto",
-                            deterministic=True
-                            )
-                
+                                max_epochs=args['epochs'],
+                                #callbacks=[checkpoint_callback],
+                                accelerator="gpu" if torch.cuda.is_available() else "cpu",
+                                devices="auto",
+                                deterministic=True
+                                    )
+        
                 trainer.fit(model, train_loader)
+
                 test_metrics = trainer.test(model, test_loader)
 
-                model_scores[label][model_name]['no_aug'].append({
+                # save for fold
+                model_scores[label][model_name][aug_name].append({
                     "acc": test_metrics[0]["test_acc"],
                     "precision": test_metrics[0]["test_precision"],
                     "recall": test_metrics[0]["test_recall"],
                     "f1": test_metrics[0]["test_f1"]
                 })
 
-                # figure out how to add results from here to the CV results aggregated across augmentations and folds
-                
-                del full_embedding_pt
+                all_preds_batches = trainer.predict(model, test_loader)
+                all_preds = torch.cat(all_preds_batches).cpu().numpy()
 
+                if fold == 4:
+                    save_results(
+                        test_data = ds_splits_for_cv['test'],
+                        y_pred = all_preds,
+                        model_name = model_name,
+                        label_col = label,
+                        task_name = f"{aug_name}_fold{fold+1}",
+                        save_folder=out_folder
+                    )
 
+                #save_model_scores(model_scores, aug_name, out_folder)
+
+                del embeddings
+                del test_loader
+                del model_architecture
+                del model
+                del trainer
+                del test_metrics
+                del all_preds_batches
+                del all_preds
+
+                import gc
+                gc.collect()
+
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            
+            
+            # fit model without augmentations: 
+            #test_loader, _ = create_dataloader(ds_splits_for_cv, full_embedding_pt, label, 'test', batch_size, 'old_indices')
+            model_architecture = build_model(args['hidden_layer_size'], label, inp_size, 0.3, ds_splits_for_cv)
+            class_weights = define_class_weights(ds_splits_for_cv, label)
+            model = SubclassModel(model_architecture, class_weights, lr=args['lr'], weight_decay=0.01, num_classes = ds_splits_for_cv['train'].features[label].num_classes)
+            trainer = L.Trainer(
+                        max_epochs=args['epochs'],
+                        #callbacks=[checkpoint_callback],
+                        accelerator="gpu" if torch.cuda.is_available() else "cpu",
+                        devices="auto",
+                        deterministic=True
+                        )
+            
+            trainer.fit(model, train_loader)
+            test_metrics = trainer.test(model, test_loader)
+
+            model_scores[label][model_name]['no_aug'].append({
+                "acc": test_metrics[0]["test_acc"],
+                "precision": test_metrics[0]["test_precision"],
+                "recall": test_metrics[0]["test_recall"],
+                "f1": test_metrics[0]["test_f1"]
+            })
+
+            # figure out how to add results from here to the CV results aggregated across augmentations and folds
+            
+            del full_embedding_pt
 
     aggregate_results(model_scores)
 

@@ -13,6 +13,9 @@ from PIL import Image, ImageDraw, ImageFilter, ImageOps
 import io
 import cv2
 
+# add brown boarder, simulating a frame
+from PIL import Image, ImageDraw
+
 class AddLayeredFrame:
 
     def __init__(self, border_sizes=(100, 100, 100), colors=None):
@@ -195,4 +198,38 @@ class RelativeGaussianBlur:
             blurred = cv2.GaussianBlur(img_np, (k, k), sigmaX=self.sigma or 0)
 
         return Image.fromarray(blurred)
+class FixedContrast:
+    def __init__(self, factor):
+        self.factor = factor
+
+    def __call__(self, img):
+        return T.functional.adjust_contrast(img, self.factor)
+
+class CannySketch:
+    def __init__(self, min=100, max=200):
+        self.min = min
+        self.max = max
+
+    def __call__(self, img):
+        transform = T.Compose([
+            T.Grayscale(),
+            RelativeGaussianBlur(strength=0.05, sigma=1),
+            FixedContrast(factor = 2)])
+        
+        img_grey = transform(img) 
+        img_grey_np = np.array(img_grey)
+        edges = cv2.Canny(img_grey_np, self.min, self.max)
+        edges = cv2.bitwise_not(edges)
+
+        return Image.fromarray(edges)
+class PencilSketchCustom:
+    def __init__(self, sigma_s=50, sigma_r=0.07, shade_factor=0.10):
+        self.sigma_s = sigma_s
+        self.sigma_r = sigma_r
+        self.shade_factor = shade_factor
+    
+    def __call__(self, img):
+        sketch_gray, __ = cv2.pencilSketch(np.array(img), sigma_s=self.sigma_s, sigma_r=self.sigma_r, shade_factor=self.shade_factor)
+        
+        return Image.fromarray(sketch_gray)
     
