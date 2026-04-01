@@ -1,0 +1,17 @@
+                           precision    recall  f1-score   support
+
+            Alfred Sisley       0.82      0.84      0.83       158
+           Berthe Morisot       0.60      0.80      0.69        30
+         Camille Pissarro       0.76      0.79      0.77       146
+             Claude Monet       0.85      0.78      0.81       225
+      Eugène Louis Boudin       0.87      0.84      0.86       115
+           Georges Seurat       0.81      0.81      0.81        27
+Henri de Toulouse-Lautrec       0.63      0.88      0.73        41
+             Mary Cassatt       0.52      0.68      0.59        22
+             Paul Cézanne       0.88      0.85      0.87       134
+    Pierre-Auguste Renoir       0.84      0.78      0.81       208
+            Édouard Manet       0.67      0.69      0.68        67
+
+                 accuracy                           0.80      1173
+                macro avg       0.75      0.79      0.77      1173
+             weighted avg       0.81      0.80      0.80      1173

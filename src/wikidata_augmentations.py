@@ -23,9 +23,10 @@ from torchmetrics.classification import MulticlassPrecision, MulticlassRecall, M
 import timm
 import torchvision.transforms as T
 import mteb
+from PIL import Image
 
 from subclf_updated import remap_features, create_dataloader, build_model, define_class_weights, SubclassModel, save_conf_matrix, plot_misclassifications, save_results, remap_features, filter_data
-from custom_augmentations import AddLayeredFrame, JPEGCompression, AddVignette, AddGrain, AddLightArtifact, RelativeGaussianBlur, FixedContrast, CannySketch, PencilSketchCustom
+from custom_augmentations_new import AddLayeredFrame, JPEGCompression, AddVignette, AddGrain, AddLightArtifact, RelativeGaussianBlur, FixedContrast, CannySketch, PencilSketchCustom
 
 def argument_parser():
 
@@ -34,7 +35,7 @@ def argument_parser():
     parser.add_argument('--dataset', type=str, help='name of huggingface dataset')
     parser.add_argument('--hidden_layer_size', type=int, help= 'size of hidden layer in clf model', default=200)
     parser.add_argument('--epochs', type=int, help="how many epochs to run the model for", default=20)
-    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--batch_size', type=int, default=256)
     parser.add_argument('--lr', type=float, help='learning rate', default=0.01)
     parser.add_argument('--model_names', nargs='+', help='list of models to run classification task with')
 
@@ -63,28 +64,33 @@ def convert_to_rgb(img):
     return img.convert("RGB")
 
 def to_numpy_array(img):
-    return np.array(img)
+    return np.array(img).astype(np.float32) / 255.0
 
-def extract_embeddings(dataset, model, aug):
+def extract_embeddings(dataset, model, aug, batch_size):
     # for large datasets, it is better to input DataLoaders to get_image_embeddings function rather than a list
 
     # specify transforms; convert dataset image to PIL and np array (necessary as input to DataLoader)
 
-    transform = T.Compose([
+    transforms = T.Compose([
         convert_to_rgb,
-        aug # add augmentation to the transforms
-    ])  
-    
+        to_numpy_array,   # Now returns 0-1 float32
+        aug,              # Your optimized augmentation
+        T.Lambda(lambda x: Image.fromarray((x * 255).astype(np.uint8))), # Back to PIL for the model
+    ]) 
     
     # need to define custom data collater, create batch of list instead of stacking (not possible as input are not tensors)
+
     def pil_collate_fn(batch):
         return {"image": batch}
 
     # apply
     try:
-        wrapped_dataset = HFImageDataset(hf_dataset=dataset, transform=transform)
+        wrapped_dataset = HFImageDataset(hf_dataset=dataset, transform=transforms)
 
-        dataloader = DataLoader(wrapped_dataset, batch_size=32, shuffle=False, collate_fn=pil_collate_fn)
+        dataloader = DataLoader(wrapped_dataset, 
+                                batch_size=batch_size, 
+                                shuffle=False, 
+                                collate_fn=pil_collate_fn)
     
         # process images in batches from dataloader
         embeddings = model.get_image_embeddings(dataloader)
@@ -121,7 +127,7 @@ def embeddings_w_eva(test_data, aug):
     transforms = T.Compose(transforms_list)
 
     wrapped_dataset = HFImageDataset(hf_dataset=test_data, transform=transforms)
-    dataloader = DataLoader(wrapped_dataset, batch_size=32, shuffle=False) # no need for custom collating because data is tensors for timm input
+    dataloader = DataLoader(wrapped_dataset, batch_size=batch_size, shuffle=False) # no need for custom collating because data is tensors for timm input
 
     # extract embeddings from batches:
     all_embeddings = []
@@ -210,7 +216,6 @@ def save_results(test_data, y_pred, model_name, label_col, aug_name, save_folder
 
     # save confusion matrix as well:
     save_conf_matrix(model_name, np.array(test_data[label_col]), y_pred, target_names, aug_name, save_folder)
-
 
 def aggregate_results(model_scores):
     rows = []
@@ -360,7 +365,7 @@ def main():
                 
                 else:
                     try: 
-                        embeddings = extract_embeddings(ds_splits_for_cv['test'], mteb_model, aug)
+                        embeddings = extract_embeddings(ds_splits_for_cv['test'], mteb_model, aug, batch_size)
 
                     except Exception as e: 
                         print(e)
@@ -452,6 +457,9 @@ def main():
                 "recall": test_metrics[0]["test_recall"],
                 "f1": test_metrics[0]["test_f1"]
             })
+
+            all_preds_batches = trainer.predict(model, test_loader)
+            all_preds = torch.cat(all_preds_batches).cpu().numpy()
 
             if fold == 4:
                 save_results(
