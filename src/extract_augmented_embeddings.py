@@ -27,6 +27,11 @@ os.environ["MKL_NUM_THREADS"] = "1"
 
 def remap_features(ds_original, ds_filtered, label):
 
+    '''
+    When a HuggingFace dataset with a ClassLabel is filtered, it still saves the original Class mapping - even if some classes are filtered out.
+    This function resets that.
+    '''
+
     original_feature = ds_original.features[label] # the ClassLabel feature
     original_names = original_feature.names
 
@@ -50,15 +55,18 @@ def remap_features(ds_original, ds_filtered, label):
     return ds_filtered
 
 def filter_data(ds, label, subclassification_task, seed, cv):
+
+    # add old column to keep track of embedding indices
     ds = ds.add_column('old_indices', range(len(ds)))
 
-    # find the rows that matches the subclassification task
+    # find the rows that matches the subset criterion
     subclass_indices = [idx for idx, a in enumerate(ds[f'{label}_str']) if a in subclassification_task]
     ds_subset = ds.select(subclass_indices)
 
     # remap labels to fit to new number of classes for subclassification task
     ds_subset = remap_features(ds, ds_subset, label)
 
+    # this is not necessary and should be deleted
     if cv==True:
         #ds_split = ds_subset.train_test_split(test_size=0.2, seed=seed, stratify_by_column=label)
 
@@ -82,6 +90,10 @@ def argument_parser():
 
 # create custom dataset class
 class HFImageDataset(Dataset):
+
+    """
+    Basically just converts a huggingface dataset with images in an 'image' column to a format that MTEB will accept
+    """
     def __init__(self, hf_dataset, transform=None):
         self.dataset = hf_dataset
         self.transform = transform
@@ -108,13 +120,11 @@ def extract_embeddings(dataset, model, batch_size):
     # for large datasets, it is better to input DataLoaders to get_image_embeddings function rather than a list
 
     # specify transforms; convert dataset image to PIL and np array (necessary as input to DataLoader)
-
     transforms = T.Compose([
         convert_to_rgb,
     ]) 
     
-    # need to define custom data collater, create batch of list instead of stacking (not possible as input are not tensors)
-
+    # need to define custom data collater
     def pil_collate_fn(batch):
         return {"image": batch}
 
@@ -154,10 +164,7 @@ def embeddings_w_eva(test_data, batch_size):
     transforms_list = []
 
     # create transforms list - RGB --> AUG --> MODEL_SPECIFIC_PREPROCESSINGS
-    # make sure img is rgb WHAT TO DO HERE WITH GRAYSCALE ? 
     transforms_list.append(convert_to_rgb)
-    #transforms_list = [convert_to_rgb] + transforms_model.transforms
-    #transforms = T.Compose(transforms_list)
     transforms_list.extend(transforms_model.transforms)
 
     transforms = T.Compose(transforms_list)
@@ -232,6 +239,7 @@ class PILImageDataset:
 
 def main():
 
+    # import custom augmentation functions
     from custom_augmentations_new import AddLayeredFrame, JPEGCompression, AddVignette, AddGrain, AddLightArtifact, RelativeGaussianBlur, FixedContrast, CannySketch, PencilSketchCustom
     
     args = argument_parser()
@@ -240,18 +248,16 @@ def main():
     os.makedirs(os.path.join('data', 'aug_embeddings'), exist_ok=True)
 
     augmentations = {
-       #'weak_blur': RelativeGaussianBlur(strength=0.3, sigma=5), # weak blurring
-        #'strong_blur': RelativeGaussianBlur(strength=0.7, sigma=7), # stronger blurring
-        #'grayscale': T.Grayscale(), # grayscale
-        #'contrast': FixedContrast(factor = 10), # changing contrasts
-        #'frame': AddLayeredFrame(border_sizes=(100, 100, 100)), # frame # MISSING
-        #'jpeg_compr': JPEGCompression(quality=6), # jpeg compression
-        #'vignette': AddVignette(strength = 0.9), # adding vignette # MISSING
-        #'weak_grain': AddGrain(std=0.3), # MISSING
-        #'strong_grain': AddGrain(std=0.7), 
-        #'light_artifact': AddLightArtifact(max_intensity=0.4, max_radius_ratio=0.4),
-        #'Canny_sketch': CannySketch(),
-        'pencil_sketch': PencilSketchCustom() # MISSING
+        'strong_blur': RelativeGaussianBlur(strength=0.7, sigma=7),
+        'grayscale': T.Grayscale(), # grayscale
+        'contrast': FixedContrast(factor = 10), # changing contrasts
+        'frame': AddLayeredFrame(border_sizes=(100, 100, 100)), # frame #
+        'jpeg_compr': JPEGCompression(quality=6), # jpeg compression
+        'vignette': AddVignette(strength = 0.9), # adding vignette
+        'weak_grain': AddGrain(std=0.3), 
+        'light_artifact': AddLightArtifact(max_intensity=0.4, max_radius_ratio=0.4),
+        'Canny_sketch': CannySketch(), # edge detection algorithm to create a fake drawing
+        'pencil_sketch': PencilSketchCustom() # other edge detection algorithm to create a fake drawing
     }
 
     # load data
@@ -278,7 +284,7 @@ def main():
         # filter
         ds_filtered = filter_data(ds, 'artist', subset, 2830, cv=True) # ignore last two parameters, just reusing function from other script
 
-    else:
+    else:  # if wikiart
 
         subset = [
             "camille-pissarro",
@@ -298,52 +304,23 @@ def main():
 
     batch_size = args['batch_size']
 
-    #for aug_name, aug in augmentations.items():
-
-        # augment images first:
-
-        #try:
-         #   ds_augmented = ds_filtered.map(
-          #                              AugmentFn(aug),
-           #                             num_proc=1,
-            #                            keep_in_memory=True,
-             #                           writer_batch_size=500,
-              #                          desc=f"Augmenting [{aug_name}]"
-               #                     )
-
-            # save an image for sanity checking:
-
-            #img_example = ds_augmented[100]['image']
-
-            #aug_img_out_path = os.path.join('out', f'{data_name}_aug_img_ex')
-
-            #os.makedirs(aug_img_out_path, exist_ok=True)
-            #img_example.save(os.path.join(aug_img_out_path, f"{aug_name}.png"))
-
-        #except Exception as e:
-         #   print(e)
-          #  continue
-
     for aug_name, aug in augmentations.items():
 
         try:
             augmented_images = []
             for idx in tqdm(range(len(ds_filtered)), desc=f"Augmenting [{aug_name}]"):
                 img = ds_filtered[idx]['image'].convert("RGB")
-                aug_img = aug(img).convert("RGB")
+                aug_img = aug(img).convert("RGB") # for grayscale images, we are not converting back to color - we give it three channels but it is still grayscaled
                 augmented_images.append(aug_img)
 
                 del img, aug_img
 
-            # rebuild as a HF dataset by swapping out the image column
-            #ds_augmented = ds_filtered.remove_columns(['image'])
-            #ds_augmented = ds_augmented.add_column('image', augmented_images)
-
+            # packaging the augmented images in a custom dataset class 
             ds_augmented = PILImageDataset(augmented_images)
             img_example = augmented_images[100]
             del augmented_images
 
-            # sanity check image
+            # sanity check image augmentation
             aug_img_out_path = os.path.join('out', f'{data_name}_aug_img_ex')
             os.makedirs(aug_img_out_path, exist_ok=True)
             img_example.save(os.path.join(aug_img_out_path, f"{aug_name}.png"))
@@ -356,9 +333,8 @@ def main():
         aug_folder_path = os.path.join('data', 'aug_embeddings', aug_name)
         os.makedirs(aug_folder_path, exist_ok=True)
 
-        # then extract features:
-
-        for model_name in args['model_names']:
+        # then extract embeddings:
+        for model_name in args['model_names']:   # make this if else statement less awkward !
             if model_name == 'eva02_clip_336':
                 pass #  
             
@@ -372,7 +348,7 @@ def main():
                 except Exception as e:
                     print(f'Error loading model: {model_path}, {e}')
 
-                    continue # skip this model
+                    continue # skip this model if error
             
             #embeddings = None
             if model_name == 'eva02_clip_336':
