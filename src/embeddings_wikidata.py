@@ -104,6 +104,7 @@ def extract_eva_embeddings(ds):
     all_embeddings = []
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model = model.to(device)
 
     with torch.no_grad():
         for batch in tqdm(dataloader, desc="Extracting embeddings", total=len(dataloader)):
