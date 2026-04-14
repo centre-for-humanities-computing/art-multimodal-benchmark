@@ -1,3 +1,7 @@
+"""
+This script takes an input an AUGMENTED SUBSET of wikiart; (wikiart_filtered_remapped_FINAL_AUG_SUBSET) 
+"""
+
 import datasets
 import numpy as np
 import os
@@ -91,7 +95,7 @@ def save_results(test_data, y_pred, model_name, label_col, aug_name, save_folder
     # save confusion matrix as well:
     save_conf_matrix(model_name, np.array(test_data[label_col]), y_pred, target_names, aug_name, save_folder)
 
-
+# save mean results across augmentations, across CV folds, for each model
 def aggregate_results(model_scores):
     rows = []
 
@@ -118,7 +122,6 @@ def aggregate_results(model_scores):
     with open(os.path.join('out', 'test_augmentation_results', 'cv_results_augmentations.txt'), 'w') as f:
         f.write(results_table.to_string())
 
-
 class SubclassModel(L.LightningModule):
     def __init__(self, model, class_weights, lr, weight_decay, num_classes): # options to set some default parameters here
 
@@ -132,16 +135,6 @@ class SubclassModel(L.LightningModule):
         # buffer makes sure that class weights moves automatically to GPU
         self.register_buffer('class_weights', class_weights)
         self.loss_fn = nn.CrossEntropyLoss(weight=self.class_weights)
-
-        # define validation metrics
-        #self.val_precision = MulticlassPrecision(num_classes=num_classes, average="macro")
-        #self.val_recall = MulticlassRecall(num_classes=num_classes, average="macro")
-        #self.val_f1 = MulticlassF1Score(num_classes=num_classes, average="macro")
-
-        # define test metrics
-        #self.test_precision = MulticlassPrecision(num_classes=num_classes, average="macro")
-        #self.test_recall = MulticlassRecall(num_classes=num_classes, average="macro")
-        #self.test_f1 = MulticlassF1Score(num_classes=num_classes, average="macro")
     
     # not exactly sure what this part is
     def forward(self, x):
@@ -201,8 +194,8 @@ class SubclassModel(L.LightningModule):
     def predict_step(self, batch, batch_idx):
         X, y = batch
         logits = self(X)
-        preds = torch.argmax(logits, dim=1)
-        probs = torch.softmax(logits, dim=1)
+        preds = torch.argmax(logits, dim=1) # argmax on logits; get the most probable class
+        probs = torch.softmax(logits, dim=1) # softmax on logits; get probabilities of each class
         return preds, probs
 
     def configure_optimizers(self):
@@ -249,7 +242,7 @@ def main():
         # Assign to the model
         model_scores[model_name] = aug_dict
     
-    # do 5-fold cross validation
+    # initialize 5-fold cross validation
     skf = StratifiedKFold(n_splits = 5, shuffle=True, random_state=2830)
     y = np.array(ds[label])
     indices = np.arange(len(ds))
@@ -274,8 +267,8 @@ def main():
             # load full, original embedding tensor
             full_embedding_pt = torch.load(os.path.join('data', 'filtered_embeddings_FINAL', model_name, f'{model_name}_all_splits.pt'))
 
-            # get non-augmented embeddings with train loader split
-            train_loader, inp_size = create_dataloader(ds_splits_for_cv, full_embedding_pt, label, 'train', batch_size, 'old_indices')
+            # get non-augmented embeddings with train loader split 
+            train_loader, inp_size = create_dataloader(ds_splits_for_cv, full_embedding_pt, label, 'train', batch_size, 'old_indices') # i can use the old_indices column because i have not reset it
 
             # define model architecture
             model_architecture = build_model(args['hidden_layer_size'], label, inp_size, 0.3, ds_splits_for_cv)
@@ -305,20 +298,24 @@ def main():
                 full_aug_embeddings = torch.load(os.path.join('data', 'aug_embeddings', aug, f'{model_name}.pt'))
 
                 # filter for test-indices
-                test_aug_embeddings = full_aug_embeddings[val_idx]
+                test_aug_embeddings = full_aug_embeddings[val_idx] # filter embeddings based on cv-fold indices
 
                 # need to get the indices of only the test set 
+                # this is not doing any filtering, simply creating a dataloader with shuffle=false with embeddings + labels
                 test_loader = create_test_loader(ds_splits_for_cv['test'], test_aug_embeddings, label, batch_size)
 
                 # predict on test data
                 test_metrics = trainer.test(model, test_loader)
 
                 all_preds_batches = trainer.predict(model, test_loader)
+
+                # get both probabilities of each class + argmax prediction  
+                # need to do torch.cat because all_preds_batches is returned per batch, not for the entire test-set
                 all_preds = torch.cat([b[0] for b in all_preds_batches]).cpu().numpy()
                 all_probs = torch.cat([b[1] for b in all_preds_batches]).cpu().numpy()
 
                 y_true = torch.tensor(ds_splits_for_cv['test'][label])
-                all_preds_tensor = torch.tensor(all_preds)
+                all_preds_tensor = torch.tensor(all_preds) # make predictions into tensor
 
                 num_classes = ds_splits_for_cv['train'].features[label].num_classes
                 
@@ -363,18 +360,7 @@ def main():
                     torch.cuda.empty_cache()
 
             # fit model without augmentations:
-            test_loader, _ = create_dataloader(ds_splits_for_cv, full_embedding_pt, label, 'test', batch_size, 'old_indices')
-            #model_architecture = build_model(args['hidden_layer_size'], label, inp_size, 0.3, ds_splits_for_cv)
-            #class_weights = define_class_weights(ds_splits_for_cv, label)
-            #model = SubclassModel(model_architecture, class_weights, lr=args['lr'], weight_decay=0.01, num_classes = ds_splits_for_cv['train'].features['artist'].num_classes)
-            #trainer = L.Trainer(
-             #           max_epochs=args['epochs'],
-                        #callbacks=[checkpoint_callback],
-              #          accelerator="gpu" if torch.cuda.is_available() else "cpu",
-               #         devices="auto",
-                #        deterministic=True
-                 #       )
-            #trainer.fit(model, train_loader)
+            test_loader, _ = create_dataloader(ds_splits_for_cv, full_embedding_pt, label, 'test', batch_size, 'old_indices') # 
             test_metrics = trainer.test(model, test_loader)
 
             all_preds_batches = trainer.predict(model, test_loader)
