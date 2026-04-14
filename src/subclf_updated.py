@@ -117,7 +117,7 @@ def create_dataloader(ds_splits, full_embedding_pt, label, split, batch_size, id
     split_indices = ds_splits[split][idx_column]
     #full_embedding_pt = torch.load(os.path.join('data', 'filtered_embeddings_FINAL', model_name, f'{model_name}_all_splits.pt'))
 
-    filtered_embeddings = full_embedding_pt[split_indices]
+    filtered_embeddings = full_embedding_pt[split_indices] # grab embeddings based on column VALUES not positions
 
     # cast to float32
     #embeddings_tensor = filtered_embeddings.float().to(device)
@@ -164,7 +164,6 @@ def define_class_weights(ds_splits, label):
 class SubclassModel(L.LightningModule):
     def __init__(self, model, class_weights, lr, weight_decay, num_classes): # options to set some default parameters here
 
-        # not really sure what this does:
         super().__init__()
 
         self.model = model
@@ -177,14 +176,14 @@ class SubclassModel(L.LightningModule):
         self.loss_fn = nn.CrossEntropyLoss(weight=self.class_weights)
 
         # define validation metrics
-        self.val_precision = MulticlassPrecision(num_classes=num_classes, average="macro")
-        self.val_recall = MulticlassRecall(num_classes=num_classes, average="macro")
-        self.val_f1 = MulticlassF1Score(num_classes=num_classes, average="macro")
+        #self.val_precision = MulticlassPrecision(num_classes=num_classes, average="macro")
+        #self.val_recall = MulticlassRecall(num_classes=num_classes, average="macro")
+        #self.val_f1 = MulticlassF1Score(num_classes=num_classes, average="macro")
 
         # define test metrics
-        self.test_precision = MulticlassPrecision(num_classes=num_classes, average="macro")
-        self.test_recall = MulticlassRecall(num_classes=num_classes, average="macro")
-        self.test_f1 = MulticlassF1Score(num_classes=num_classes, average="macro")
+        #self.test_precision = MulticlassPrecision(num_classes=num_classes, average="macro")
+        #self.test_recall = MulticlassRecall(num_classes=num_classes, average="macro")
+        #self.test_f1 = MulticlassF1Score(num_classes=num_classes, average="macro")
     
     # not exactly sure what this part is
     def forward(self, x):
@@ -213,15 +212,15 @@ class SubclassModel(L.LightningModule):
 
         acc = (preds == y).float().mean()
 
-        precision = self.val_precision(preds, y)
-        recall = self.val_recall(preds, y)
-        f1 = self.val_f1(preds, y)
+        #precision = self.val_precision(preds, y)
+        #recall = self.val_recall(preds, y)
+        #f1 = self.val_f1(preds, y)
 
         self.log('val_loss', loss)
         self.log('val_acc', acc)
-        self.log('val_precision', precision)
-        self.log('val_recall', recall)
-        self.log('val_f1', f1)
+        #self.log('val_precision', precision)
+        #self.log('val_recall', recall)
+        #self.log('val_f1', f1)
 
     def test_step(self, batch, batch_idx):
         X, y = batch 
@@ -231,21 +230,22 @@ class SubclassModel(L.LightningModule):
         preds = output.argmax(1)
 
         acc = (preds == y).float().mean()
-        precision = self.test_precision(preds, y)
-        recall = self.test_recall(preds, y)
-        f1 = self.test_f1(preds, y)
+        #precision = self.test_precision(preds, y)
+        #recall = self.test_recall(preds, y)
+        #f1 = self.test_f1(preds, y)
 
         self.log('test_loss', loss)
         self.log('test_acc', acc) 
-        self.log('test_precision', precision)
-        self.log('test_recall', recall)
-        self.log('test_f1', f1)
+        #self.log('test_precision', precision)
+        #self.log('test_recall', recall)
+        #self.log('test_f1', f1)
     
     def predict_step(self, batch, batch_idx):
         X, y = batch
         logits = self(X)
         preds = torch.argmax(logits, dim=1)
-        return preds
+        probs = torch.softmax(logits, dim=1)
+        return preds, probs
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
@@ -342,11 +342,10 @@ def save_results(test_data, y_pred, model_name, label_col, task_name):
     # save examples of misclassified images
     plot_misclassifications(model_name, np.array(test_data[label_col]), y_pred, test_data, task_name, label_col)
 
-def save_model_scores(model_scores, savefile_suffix):
-        rows = []
+def aggregate_results(model_scores, savefile_suffix):
+    rows = []
 
-        for model_name, scores in model_scores.items():
-            
+    for model_name, scores in model_scores.items():
             df = pd.DataFrame(scores)
 
             row = {
@@ -354,18 +353,18 @@ def save_model_scores(model_scores, savefile_suffix):
                 "accuracy": f"{df['acc'].mean():.3f} ({df['acc'].std():.3f})",
                 "precision": f"{df['precision'].mean():.3f} ({df['precision'].std():.3f})",
                 "recall": f"{df['recall'].mean():.3f} ({df['recall'].std():.3f})",
-                "macro_f1": f"{df['f1'].mean():.3f} ({df['f1'].std():.3f})",
+                "f1": f"{df['f1'].mean():.3f} ({df['f1'].std():.3f})",
             }
 
             rows.append(row)
 
-        results_table = pd.DataFrame(rows).set_index("model")
-        print(results_table)
+    results_table = pd.DataFrame(rows).set_index("model")
+    print(results_table)
 
-        # Save results_table to a text file
-        save_path = os.path.join('out', 'subclassification_reports')
-        with open(os.path.join(save_path, f'{model_name}_{args['savefile_suffix']}_CV_results.txt'), 'w') as f:
-            f.write(results_table.to_string())
+    # Save results_table to a text file
+    save_path = os.path.join('out', 'subclassification_reports')
+    with open(os.path.join(save_path, f'{savefile_suffix}_CV_results.txt'), 'w') as f:
+        f.write(results_table.to_string())
 
 def main():
 
@@ -457,15 +456,25 @@ def main():
                 test_metrics = trainer.test(model, test_loader)
 
                 # save across folds
-                model_scores[model_name].append({
-                "acc": test_metrics[0]["test_acc"],
-                "precision": test_metrics[0]["test_precision"],
-                "recall": test_metrics[0]["test_recall"],
-                "f1": test_metrics[0]["test_f1"]
-                    })
-
                 all_preds_batches = trainer.predict(model, test_loader)
-                all_preds = torch.cat(all_preds_batches).cpu().numpy()
+                all_preds = torch.cat([b[0] for b in all_preds_batches]).cpu().numpy()
+                all_probs = torch.cat([b[1] for b in all_preds_batches]).cpu().numpy()
+
+                y_true = torch.tensor(ds_splits_for_cv['test'][label])
+                all_preds_tensor = torch.tensor(all_preds)
+
+                num_classes = ds_splits_for_cv['train'].features[label].num_classes
+                
+                precision_fn = MulticlassPrecision(num_classes=num_classes, average="macro")
+                recall_fn = MulticlassRecall(num_classes=num_classes, average="macro")
+                f1_fn = MulticlassF1Score(num_classes=num_classes, average="macro")
+
+                model_scores[model_name].append({
+                    "acc": (all_preds_tensor == y_true).float().mean().item(),
+                    "precision": precision_fn(all_preds_tensor, y_true).item(),
+                    "recall": recall_fn(all_preds_tensor, y_true).item(),
+                    "f1": f1_fn(all_preds_tensor, y_true).item(),
+                })
 
                 if fold == 4:
                     save_results(
@@ -480,7 +489,7 @@ def main():
         
             del ds_splits_for_cv, ds_train, ds_test
         
-        save_model_scores(model_scores, args['savefile_suffix'])
+        aggregate_results(model_scores, args['savefile_suffix'])
 
             
     else:
