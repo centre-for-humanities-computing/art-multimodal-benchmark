@@ -337,7 +337,6 @@ def save_classification_report(test_data, label_col, model_name, predicted_class
     with open(out_path, 'w') as file:
                 file.write(report)
 
-
 def fit_and_predict(ds_splits, model_name, label, batch_size, epochs, device):
 
     '''
