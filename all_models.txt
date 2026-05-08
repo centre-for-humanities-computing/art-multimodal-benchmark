@@ -17,4 +17,4 @@ openai/clip-vit-large-patch14
 facebook/dinov2-large
 facebook/dinov2-base
 laion/CLIP-ViT-B-32-DataComp.XL-s13B-b90K
-hej/eva02_clip_336
+___/eva02_clip_336

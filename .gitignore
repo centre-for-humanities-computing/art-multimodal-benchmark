@@ -13,3 +13,4 @@ sam3/
 .venv/
 lightning_logs/
 old_code/
+env_to_jupyter.sh
