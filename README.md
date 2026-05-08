@@ -40,6 +40,7 @@ art-multimodal-benchmark/
 ├── .env                                 # contains HuggingFace token (currently empty, needs to be specified by the user)
 ├── all_models.txt                       # list of embedding models used for this project                    
 ├── extract_embeddings.sh                # run script to extract embeddings for dataset with specified list of models
+├── initial_clf_task.sh                  # run script for initial classification task
 ├── README.md               
 ├── requirements.txt                     # Python dependencies
 ├── run_augmentations.sh                 # runs extract_augmented_embeddings.py and classify_augmentations.py to extract augmented embeddings and classify them
@@ -62,11 +63,11 @@ In order to use SAM3, you need to agree to share your contact information and sp
 
 ## Data
 
-A filtered & cleaned version of WikiArt ([Huggan link](https://huggingface.co/datasets/huggan/wikiart)) version can be found on HuggingFace HERE.
+A filtered & cleaned version of WikiArt version can be found on HuggingFace ([HERE](https://huggingface.co/datasets/chcaa/wikiart_benchmarking)).
 
-The WikiData dataset used can be found HERE.
+The WikiData dataset used can be found ([HERE](https://huggingface.co/datasets/chcaa/wikidata_benchmarking)).
 
-We recommed downloading the datasets via HuggingFace and placing it in the ```data``` folder:
+We recommend downloading the datasets via HuggingFace and placing it in the ```data``` folder:
 
 ```
 import datasets
@@ -75,7 +76,7 @@ import argparse
 from functools import partial
 
 # load dataset from the hub
-hf_data = datasets.load_dataset('dataset_name', split='train', streaming=True)
+hf_data = datasets.load_dataset('chcaa/wikiart_benchmarking', split='train', streaming=True) # change 'wikiart' with 'wikidata' to get wikidata instead
 
 # convert dataset to iterable generator
 def gen_from_iterable_dataset(iterable_ds):
@@ -88,7 +89,7 @@ ds = datasets.Dataset.from_generator(partial(gen_from_iterable_dataset, hf_data)
 os.makedirs('data', exist_ok=True)
 
 # save to disk
-ds.save_to_disk(os.path.join('data', args['local_name']))
+ds.save_to_disk(os.path.join('data', 'wikiart')) # change with 'wikidata' for wikidata dataset
 ```
 
 ## Usage
@@ -107,15 +108,49 @@ bash setup.sh
 ```
 
 ### Extract embeddings
-To run feature extraction, run: 
+To run feature extraction with predefined arguments, run: 
 
 ```
-???
+bash extract_embeddings.sh 
+```
+
+### Initial classification task:
+
+```
+initial_clf_task.sh
 ```
 
 ### Benchmarking tasks 
-To run classifications, run:
+Classifications/benchmarking tasks with predefined arguments:
+
+Subclassifications:
+```
+run_subclf.sh
+```
+
+Wikidata classification: 
 
 ```
-???
+run_wikidata_clf.sh
 ```
+
+Augmentations:
+
+```
+run_augmentations.sh
+```
+
+Segmentation:
+
+````
+# download SAM3 model
+bash sam_setup.sh
+
+# activate SAM3 env
+source .venv/bin/activate
+
+# run tree segmentation with SAM3
+
+python3 src/segmentation_task.py
+
+````
