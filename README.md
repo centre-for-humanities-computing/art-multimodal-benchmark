@@ -44,16 +44,48 @@ art-multimodal-benchmark/
 └── setup.sh                             # set up virtual environment and install required packages
 ```
 
-## Data & Code
+## Prerequisites
 
-### Data
+First, clone the project's repository:
 
-The datasets used can be found on [HuggingFace](https://huggingface.co/). # link? 
+```
+git clone https://github.com/louisebphansen/monopolet-nlp.git
+```
 
-for code for extraction of EVA-02-CLIP features see **link_to_bachelor_github**
+In order to use SAM3, you need to agree to share your contact information and specify a personal HuggingFace token. See https://huggingface.co/facebook/sam3. Next, create a HuggingFace token (which allows usage of the models) and insert it in the ```.env``` file in the repo. 
 
+## Data
 
-### Usage
+A filtered & cleaned version of WikiArt ([Huggan link](https://huggingface.co/datasets/huggan/wikiart)) version can be found on HuggingFace HERE.
+
+The WikiData dataset used can be found HERE.
+
+We recommed downloading the datasets via HuggingFace and placing it in the ```data``` folder:
+
+```
+import datasets
+import os
+import argparse 
+from functools import partial
+
+# load dataset from the hub
+hf_data = datasets.load_dataset('dataset_name', split='train', streaming=True)
+
+# convert dataset to iterable generator
+def gen_from_iterable_dataset(iterable_ds):
+    yield from iterable_ds
+
+# convert to dataset to be saved locally
+ds = datasets.Dataset.from_generator(partial(gen_from_iterable_dataset, hf_data), features=hf_data.features)
+
+# create datafolder
+os.makedirs('data', exist_ok=True)
+
+# save to disk
+ds.save_to_disk(os.path.join('data', args['local_name']))
+```
+
+## Usage
 
 First, clone the repo with 
 
@@ -68,12 +100,14 @@ In the main folder, set up virtual environment and install required packages wit
 bash setup.sh
 ```
 
+### Extract embeddings
 To run feature extraction, run: 
 
 ```
 ???
 ```
 
+### Benchmarking tasks 
 To run classifications, run:
 
 ```
