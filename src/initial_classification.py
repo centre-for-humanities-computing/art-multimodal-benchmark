@@ -19,7 +19,7 @@ from torch.utils.data import DataLoader
 # IMPORT fit_and_predict from build_model script
 import sys
 sys.path.append(os.path.dirname(__file__))
-from build_model import fit_and_predict
+from classification_utils import fit_and_predict
 import traceback
 
 LOG_FILE_NAME = None

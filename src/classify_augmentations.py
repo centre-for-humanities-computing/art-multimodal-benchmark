@@ -21,7 +21,7 @@ from sklearn.model_selection import StratifiedKFold
 from torchmetrics.classification import MulticlassPrecision, MulticlassRecall, MulticlassF1Score
 
 # import from own script
-from subclf_updated import create_dataloader, build_model, define_class_weights, filter_data
+from subclassification import create_dataloader, build_model, define_class_weights, filter_data
 
 # define arguments
 def argument_parser():

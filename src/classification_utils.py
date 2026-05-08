@@ -7,8 +7,23 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report
+from typing import Any
 
-def build_classification_model(ds_splits, model_name, label, batch_size, device, inp_size):
+def build_classification_model(ds_splits: dict, model_name: str, label: str, batch_size: int, device: torch.device, inp_size: int) -> dict[str, Any]:
+    '''
+    Builds a classification model with label-specific hyperparameters, loss function, optimizer, and learning rate scheduler.
+
+    Args:
+        ds_splits: dict containing train/val/test splits.
+        model_name: Name of the embedding model.
+        label: Target label to classify ('artist', 'style', or 'genre').
+        batch_size: Batch size used during training.
+        device: Torch device to move the model to (CPU or GPU).
+        inp_size: Dimensionality of the input embeddings.
+
+    Returns:
+        A dictionary with keys 'model', 'criterion', 'optimizer', and 'scheduler'.
+    '''
 
     if label=='artist':
 
@@ -33,6 +48,7 @@ def build_classification_model(ds_splits, model_name, label, batch_size, device,
     # get number of classes and embeddings dimensions
     num_classes = ds_splits['train'].features[label].num_classes
 
+    # build model
     model = nn.Sequential(
         nn.Linear(in_features=inp_size, out_features=hidden_layer_size),
         nn.ReLU(),
@@ -51,13 +67,6 @@ def build_classification_model(ds_splits, model_name, label, batch_size, device,
 
     # define optimizer with learning rate scheduler and L2 regularization (==weight_decay - there's no direct kernel-regularizer keras equivalent in torch)
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=decay) # apply to all hyperparameters of all layers
-
-    # learning rate scheduler with exponential decays
-    #steps_per_epoch = len(ds_splits['train']) // batch_size
-    #decay_steps = steps_per_epoch * 2
-    #decay_per_batch = 0.9 ** (1 / decay_steps)  # calc decay rate per batch
-
-    #scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=decay_per_batch)
     
     # test with per-epoch decay rather than per batch
     scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
@@ -69,27 +78,39 @@ def build_classification_model(ds_splits, model_name, label, batch_size, device,
 
     return model_inits
 
-def create_dataloader(ds_splits, full_embedding_pt, label, split, batch_size, device):
+def create_dataloader(ds_splits: dict, full_embedding_pt: torch.Tensor, label: str, split: str, batch_size: int, device: torch.device) -> tuple[DataLoader, int]:
+    '''
+    Creates a DataLoader for a given dataset split by indexing into the full precomputed embeddings tensor.
+
+    Args:
+        ds_splits: dict containing train/val/test splits (HF datasets).
+        full_embedding_pt: Full precomputed embeddings tensor for all samples.
+        label: Target label column name (e.g., 'artist', 'style', 'genre').
+        split: Which split to load ('train', 'val', or 'test').
+        batch_size: Number of samples per batch.
+        device: Torch device (unused here, kept for interface consistency).
+
+    Returns:
+        A tuple of (DataLoader for the split, embedding dimensionality).
+    '''
     
     class EmbeddingsDataset(Dataset):
-        def __init__(self, embeddings, labels):
+        def __init__(self, embeddings: torch.Tensor, labels: torch.Tensor) -> None:
             self.embeddings = embeddings
             self.labels = labels
 
-        def __len__(self):
+        def __len__(self) -> int:
             return len(self.labels)
 
-        def __getitem__(self, idx):
+        def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
             return self.embeddings[idx], self.labels[idx]
 
     # load full embedding and split based on correct indices
     split_indices = ds_splits[split]['old_emb_indices']
-    #full_embedding_pt = torch.load(os.path.join('data', 'filtered_embeddings_FINAL', model_name, f'{model_name}_all_splits.pt'))
 
     filtered_embeddings = full_embedding_pt[split_indices]
 
     # cast to float32
-    #embeddings_tensor = filtered_embeddings.float().to(device)
     embeddings_tensor = filtered_embeddings.float()
 
     y = ds_splits[split][label]
@@ -109,14 +130,14 @@ def create_dataloader(ds_splits, full_embedding_pt, label, split, batch_size, de
 
     return dataloader, embedding_size
 
-def save_plot_history(H, epochs, name):
+def save_plot_history(H: dict[str, list[float]], epochs: int, name: str) -> None:
     '''
     Saves the validation and loss history plots of a fitted model in the 'out' folder.
     
-    Arguments:
-    - H: Saved history of a model fit
-    - epochs: Number of epochs the model runs on
-    - name: What the plot should be called
+    Args:
+        - H: Saved history of a model fit
+        - epochs: Number of epochs the model runs on
+        - name: What the plot should be called
     
     Returns:
         None
@@ -147,7 +168,22 @@ def save_plot_history(H, epochs, name):
 
     plt.savefig(os.path.join(plots_dir_path, name))
 
-def build_training_loop(epochs, model_inits, dataloaders, model_name, label, device):
+def build_training_loop(epochs: int, model_inits: dict[str, Any], dataloaders: dict[str, DataLoader], model_name: str, label: str, device: torch.device) -> tuple[dict[str, list[float]], list[int]]:
+    '''
+    Runs the full training loop with early stopping, evaluates on validation data each epoch,
+    and performs inference on the test set using the best model weights.
+
+    Args:
+        epochs: Maximum number of training epochs.
+        model_inits: Dictionary containing 'model', 'criterion', 'optimizer', and 'scheduler'.
+        dataloaders: Dictionary containing 'train_loader', 'val_loader', and 'test_loader'.
+        model_name: Name of the embedding model (used for saving outputs).
+        label: Target label being classified (used for saving outputs).
+        device: Torch device to run training on.
+
+    Returns:
+        A tuple of (history dict with train/val loss and accuracy lists, list of test set predictions).
+    '''
 
     # Early stopping setup
     best_val_loss = float('inf')
@@ -296,32 +332,19 @@ def build_training_loop(epochs, model_inits, dataloaders, model_name, label, dev
 
     return history, predictions
 
-def save_classification_report(test_data, label_col, model_name, predicted_classes):
-
+def save_classification_report(test_data: Any, label_col: str, model_name: str, predicted_classes: list[int]) -> None:
     '''
-    Save classification report on predicted versus true data
+    Save classification report on predicted versus true data.
 
     Args:
-        - test_data: huggingface ds with test data
-        - feature_col: label of dataset classified, e.g., 'genre'
-        - embedding_col: name of column containing image embeddings
-        - predicted_classes: predicted y labels
+        test_data: HuggingFace dataset split containing the test labels.
+        label_col: Name of the label column to classify (e.g., 'genre').
+        model_name: Name of the embedding model (used for naming the output file).
+        predicted_classes: List of predicted class indices.
 
+    Returns:
+        None
     '''
-    
-    # save the class labels
-    #label_class = test_data.features[label_col]
-
-    # save the number of classes
-    #num_classes = test_data.features[label_col].num_classes
-
-    # map integer values to class label strings
-    #mapped_labels = {}
-
-    #for i in range(num_classes):
-     #  mapped_labels[i] = label_class.int2str(i)
-    
-    #labels = list(mapped_labels.values())
 
     labels = np.unique(test_data[label_col])
     target_names = [test_data.features[label_col].int2str(int(i)) for i in labels]
@@ -337,12 +360,21 @@ def save_classification_report(test_data, label_col, model_name, predicted_class
     with open(out_path, 'w') as file:
                 file.write(report)
 
-def fit_and_predict(ds_splits, model_name, label, batch_size, epochs, device):
-
+def fit_and_predict(ds_splits: DatasetDict, model_name: str, label: str, batch_size: int, epochs: int, device: torch.device) -> None:
     '''
-    Model name as in only name, not 'google/siglip...' path
+    End-to-end pipeline that loads embeddings, trains a classification model, and saves predictions,
+    history plots, and a classification report to disk.
 
-    This is the function we want to import to the other script
+    Args:
+        ds_splits: HuggingFace DatasetDict containing train/val/test splits.
+        model_name: Short model name (not the full HuggingFace path) used for loading embeddings and naming outputs.
+        label: Target label to classify ('artist', 'style', or 'genre').
+        batch_size: Number of samples per batch.
+        epochs: Maximum number of training epochs.
+        device: Torch device to run training on.
+
+    Returns:
+        None
     '''
     print(f"Starting classification for {model_name}")
 

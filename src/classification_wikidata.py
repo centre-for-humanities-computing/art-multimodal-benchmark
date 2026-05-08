@@ -20,8 +20,8 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import StratifiedKFold
 from torchmetrics.classification import MulticlassPrecision, MulticlassRecall, MulticlassF1Score
 
-from subclf_updated import filter_data, create_dataloader, build_model, define_class_weights, save_conf_matrix, save_results
-from classify_augmentations_FINAL import SubclassModel
+from subclassification import filter_data, create_dataloader, build_model, define_class_weights, save_conf_matrix, save_results
+from classify_augmentations import SubclassModel
 
 # define argument parser
 def argument_parser():

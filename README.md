@@ -12,7 +12,8 @@ art-multimodal-benchmark/
 ├── data/                                # this is where loaded HuggingFace datasets and extracted embeddings should be placed
 │   # should anything else be here?
 │
-├── src/                                 # Source code 
+├── src/                                 # Source code
+│   ├── classification_utils.py          # utils for building initial classification model
 │   ├── classification_wikidata.py       # classify artists from wikidata dataset
 │   ├── classify_augmentations.py        # run classification with augmented data
 │   ├── custom_augmentations.py          # contains code to create custom data augmentations
