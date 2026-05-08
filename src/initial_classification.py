@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 
-# IMPORT fit_and_predict from build_model script
+# IMPORT fit_and_predict from clf script
 import sys
 sys.path.append(os.path.dirname(__file__))
 from classification_utils import fit_and_predict
