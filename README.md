@@ -31,20 +31,17 @@ art-multimodal-benchmark/
 │   ├── test_augmentation_results/       # classification reports for data augmentation classification task
 │   └── wikidata_clf_results/            # results from wikidata classification
 │
-├── plots/                               # plots
-│   ├── violin_cosine.png                # violin plot for cosine similarity
-│   ├── violin_llm_judge.png             # violin plot for llm-as-a-judge
-│   ├── violin_cosine_DUMMY.png          # violin plot for cosine similarity for dummy data
-│   └── violin_llm_judge_DUMMY.png       # violin plot for llm-as-a-judge for dummy data
-│
 ├── .env                                 # contains HuggingFace token (currently empty, needs to be specified by the user)
-├── README.md                    
+├── all_models.txt                       # list of embedding models used for this project                    
+├── extract_embeddings_wikidata.sh       # run embeddings_wikidata.py with specified list of models
+├── README.md               
 ├── requirements.txt                     # Python dependencies
-├── run_python_scripts_dummy.sh          # run python scripts from src/ with dummy data on GPU
-├── run_python_scripts_dummy_CPU.sh      # run python scripts from src/ with dummy data on CPU
-├── run_r_scripts_dummy.sh               # Run R scripts from src/ with set dummy data
-├── env_to_jupyter.sh                    # creates kernel from .venv to be used for jupyter 
-└── setup.sh                             # Set up virtual environment and install required packages
+├── run_augmentations.sh                 # runs extract_augmented_embeddings.py and classify_augmentations.py to extract augmented embeddings and classify them
+├── run_subclf.sh                        # run subclassification.py script with defined subclassification task
+├── run_wikidata_clf.sh                  # run classification_wikidata.py scrip
+├── SAM_requirements.txt                 # required packages + versions to run SAM3 + segmentation code
+├── sam_setup.sh                         # download SAM3 model and install required packages with specified versions
+└── setup.sh                             # set up virtual environment and install required packages
 ```
 
 ## Data & Code
