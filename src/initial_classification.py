@@ -1,3 +1,7 @@
+"""
+Run classification of genre, styles and artists for the initial classification task.
+"""
+
 print('Importing modules...')
 import pandas as pd
 import datasets
@@ -12,10 +16,10 @@ import matplotlib.pyplot as plt
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 
-# IMPORT fit_and_predict from classify.py script
+# IMPORT fit_and_predict from build_model script
 import sys
 sys.path.append(os.path.dirname(__file__))
-from classify_updated import fit_and_predict
+from build_model import fit_and_predict
 import traceback
 
 LOG_FILE_NAME = None
@@ -30,6 +34,7 @@ def argument_parser():
     parser.add_argument('--batch_size', type=int)
     parser.add_argument('--seed', type=int, help='seed for train/test splitting')
     parser.add_argument('--log_file_name', type=str, help='what to call the output logfile')
+    parser.add_argument('--model_names', nargs='+', help='list of models to run classification task with')
     args = vars(parser.parse_args())
     
     return args
@@ -48,6 +53,10 @@ def classify_all_features(ds_splits,
                           epochs,
                           labels, 
                           device):
+    
+    """
+    Run classification model for all labels
+    """
 
     for label in labels:
         try:
@@ -103,11 +112,6 @@ def main():
     # only select rows not in idx_to_remove
     ds_full = ds_full.select([i for i in range(len(ds_full)) if i not in idx_to_remove])
 
-    # verify correct rows have been removed
-    #print(Counter(ds_full['artist_str']))
-    #print(Counter(ds_full['style_str']))
-    #print(Counter(ds_full['genre_str']))
-
     # split data
     ds_split = ds_full.train_test_split(test_size=0.2, seed=args['seed']) # implicit shuffle=True
     ds_train = ds_split['train']
@@ -119,7 +123,7 @@ def main():
     ds_test = ds_test_split['test']
 
     # save test data explicitly to disk for later manipulation and prediction
-    ds_test.save_to_disk(os.path.join('data', f"wikiart_filtered_test_split"))
+    ds_test.save_to_disk(os.path.join('data', f"wikiart_test_split"))
 
     ds_splits = {
             'train': ds_train,
@@ -135,7 +139,7 @@ def main():
     print(device)
 
     # loop over all models which embeddings have been extracted from
-    model_list = os.listdir(os.path.join('data', 'filtered_embeddings_FINAL'))
+    model_list = args['model_names']
 
     for model_name in model_list:
         classify_all_features(ds_splits, 
