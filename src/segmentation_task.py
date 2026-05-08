@@ -118,18 +118,18 @@ def main():
     df = pd.read_csv(os.path.join('data', 'sample_200_paintings.csv'))
 
     augmentations = {
-       #'weak_blur': RelativeGaussianBlur(strength=0.3, sigma=5), # weak blurring
-       # 'strong_blur': RelativeGaussianBlur(strength=0.7, sigma=7), # stronger blurring
-       # 'grayscale': T.Grayscale(), # grayscale
-       # 'contrast': FixedContrast(factor = 10), # changing contrasts
-       # 'frame': AddLayeredFrame(border_sizes=(100, 100, 100)), # frame
-       # 'jpeg_compr': JPEGCompression(quality=6), # jpeg compression
-       # 'vignette': AddVignette(strength = 0.9), # adding vignette
-       # 'weak_grain': AddGrain(std=0.3),
-       # 'strong_grain': AddGrain(std=0.7),
-       # 'light_artifact': AddLightArtifact(max_intensity=0.4, max_radius_ratio=0.4),
-        'Canny_sketch': CannySketch()
-        #'pencil_sketch': PencilSketchCustom()
+       'weak_blur': RelativeGaussianBlur(strength=0.3, sigma=5), # weak blurring
+        'strong_blur': RelativeGaussianBlur(strength=0.7, sigma=7), # stronger blurring
+        'grayscale': T.Grayscale(), # grayscale
+        'contrast': FixedContrast(factor = 10), # changing contrasts
+        'frame': AddLayeredFrame(border_sizes=(100, 100, 100)), # frame
+        'jpeg_compr': JPEGCompression(quality=6), # jpeg compression
+        'vignette': AddVignette(strength = 0.9), # adding vignette
+        'weak_grain': AddGrain(std=0.3),
+        'strong_grain': AddGrain(std=0.7),
+        'light_artifact': AddLightArtifact(max_intensity=0.4, max_radius_ratio=0.4),
+        'Canny_sketch': CannySketch(),
+        'pencil_sketch': PencilSketchCustom()
     }
 
     for aug_name, aug in augmentations.items():

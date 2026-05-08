@@ -1,7 +1,0 @@
-Classification done for siglip-base-patch16-512 - artist
-Classification done for siglip-so400m-patch14-384 - artist
-Classification done for dinov2-large - artist
-Classification done for clip-vit-large-patch14 - artist
-Classification done for siglip-base-patch16-256 - artist
-Classification done for CLIP-ViT-L-14-laion2B-s32B-b82K - artist
-Classification done for CLIP-ViT-B-16-DataComp.XL-s13B-b90K - artist
