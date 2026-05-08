@@ -63,9 +63,9 @@ In order to use SAM3, you need to agree to share your contact information and sp
 
 ## Data
 
-A filtered & cleaned version of WikiArt version can be found on HuggingFace ([HERE](https://huggingface.co/datasets/chcaa/wikiart_benchmarking)).
+A filtered & cleaned version of WikiArt version can be found on HuggingFace [HERE](https://huggingface.co/datasets/chcaa/wikiart_benchmarking).
 
-The WikiData dataset used can be found ([HERE](https://huggingface.co/datasets/chcaa/wikidata_benchmarking)).
+The WikiData dataset used can be found [HERE](https://huggingface.co/datasets/chcaa/wikidata_benchmarking).
 
 We recommend downloading the datasets via HuggingFace and placing it in the ```data``` folder:
 
