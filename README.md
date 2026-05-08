@@ -49,7 +49,7 @@ art-multimodal-benchmark/
 First, clone the project's repository:
 
 ```
-git clone https://github.com/louisebphansen/monopolet-nlp.git
+git clone https://github.com/centre-for-humanities-computing/art-multimodal-benchmark.git
 ```
 
 In order to use SAM3, you need to agree to share your contact information and specify a personal HuggingFace token. See https://huggingface.co/facebook/sam3. Next, create a HuggingFace token (which allows usage of the models) and insert it in the ```.env``` file in the repo. 
