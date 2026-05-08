@@ -9,15 +9,19 @@ This repository contains the code accompanying the paper *A Benchmark Dilemma*.
 ```
 art-multimodal-benchmark/
 │
-├── data/                                # this is where loaded HuggingFace datasets and extracted embeddings should be placed
-│   # should anything else be here?
+├── data/                                # (these files are not pushed, but created as when running the code)
+│   ├── wikiart/                         # -> download WikiArt dataset from HuggingFace and save to disk as 'wikiart'
+│   ├── wikiart_embeddings/              # created when running extract_embeddings.py with wikiart data
+│   ├── wikidata/                        # -> download WikiData dataset from HuggingFace and save to disk as 'wikidata'
+│   ├── wikidata_embeddings/             # created when running extract_embeddings.py with wikidata data
+│   └── aug_embeddings/                  # created when running extract_augmented_embeddings.py with wikiart data
 │
 ├── src/                                 # Source code
 │   ├── classification_utils.py          # utils for building initial classification model
 │   ├── classification_wikidata.py       # classify artists from wikidata dataset
 │   ├── classify_augmentations.py        # run classification with augmented data
 │   ├── custom_augmentations.py          # contains code to create custom data augmentations
-│   ├── embeddings_wikidata.py           # extract embeddings from wikidata dataset
+│   ├── extract_embeddings.py            # extract embeddings from HuggingFace dataset with MIEB/timm models
 │   ├── extract_augmented_embeddings.py  # extract embeddings from augmented images
 │   ├── initial_classification.py        # code to run initial classification task on embeddings
 │   ├── segmentation_task.py             # code to run tree segmentation + augmentation with SAM3
@@ -30,11 +34,12 @@ art-multimodal-benchmark/
 │   ├── subclassification_conf_matrices/ # confusion matric plots for subclassification task
 │   ├── subclassification_reports/       # classification reports for subclassification task
 │   ├── test_augmentation_results/       # classification reports for data augmentation classification task
+│   ├── segmentations/                   # .csv scripts with segmentation results metadata
 │   └── wikidata_clf_results/            # results from wikidata classification
 │
 ├── .env                                 # contains HuggingFace token (currently empty, needs to be specified by the user)
 ├── all_models.txt                       # list of embedding models used for this project                    
-├── extract_embeddings_wikidata.sh       # run embeddings_wikidata.py with specified list of models
+├── extract_embeddings.sh                # run script to extract embeddings for dataset with specified list of models
 ├── README.md               
 ├── requirements.txt                     # Python dependencies
 ├── run_augmentations.sh                 # runs extract_augmented_embeddings.py and classify_augmentations.py to extract augmented embeddings and classify them
