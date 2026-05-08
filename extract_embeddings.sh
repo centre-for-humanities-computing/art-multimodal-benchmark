@@ -1,0 +1,9 @@
+source env/bin/activate
+
+MODEL_LIST="laion/CLIP-ViT-bigG-14-laion2B-39B-b160k google/siglip-so400m-patch14-384 google/siglip-large-patch16-384 laion/CLIP-ViT-g-14-laion2B-s34B-b88K google/siglip-large-patch16-256 laion/CLIP-ViT-L-14-DataComp.XL-s13B-b90K laion/CLIP-ViT-H-14-laion2B-s32B-b79K google/siglip-base-patch16-512 laion/CLIP-ViT-L-14-laion2B-s32B-b82K google/siglip-base-patch16-384 laion/CLIP-ViT-B-16-DataComp.XL-s13B-b90K google/siglip-base-patch16-256 google/siglip-base-patch16-224 facebook/dinov2-giant google/siglip-base-patch16-256-multilingual openai/clip-vit-large-patch14 facebook/dinov2-large facebook/dinov2-base laion/CLIP-ViT-B-32-DataComp.XL-s13B-b90K ___/eva02_clip_336"
+
+# wikiart
+python3 src/extract_embeddings.py --models $MODEL_LIST --dataset wikiart --out_folder_name wikiart_embeddings
+
+# wikidata
+python3 src/extract_embeddings.py --models $MODEL_LIST --dataset wikidata --out_folder_name wikidata_embeddings

@@ -360,7 +360,7 @@ def save_classification_report(test_data: Any, label_col: str, model_name: str, 
     with open(out_path, 'w') as file:
                 file.write(report)
 
-def fit_and_predict(ds_splits: DatasetDict, model_name: str, label: str, batch_size: int, epochs: int, device: torch.device) -> None:
+def fit_and_predict(ds_splits: DatasetDict, model_name: str, label: str, batch_size: int, epochs: int, device: torch.device, embedding_folder_name) -> None:
     '''
     End-to-end pipeline that loads embeddings, trains a classification model, and saves predictions,
     history plots, and a classification report to disk.
@@ -380,7 +380,7 @@ def fit_and_predict(ds_splits: DatasetDict, model_name: str, label: str, batch_s
 
     # load embeddings for model
 
-    full_embedding_pt = torch.load(os.path.join('data', 'filtered_embeddings_FINAL', model_name, f'{model_name}_all_splits.pt'))
+    full_embedding_pt = torch.load(os.path.join('data', embedding_folder_name, model_name, f'{model_name}_all_splits.pt'))
 
     # define dataloaders
     train_loader, inp_size = create_dataloader(ds_splits, full_embedding_pt, label, 'train', batch_size, device)

@@ -35,6 +35,7 @@ def argument_parser():
     parser.add_argument('--seed', type=int, help='seed for train/test splitting')
     parser.add_argument('--log_file_name', type=str, help='what to call the output logfile')
     parser.add_argument('--model_names', nargs='+', help='list of models to run classification task with')
+    parser.add_argument('--embedding_folder_name', type=str, help='name of folder in data/ with embeddings')
     args = vars(parser.parse_args())
     
     return args
@@ -52,7 +53,8 @@ def classify_all_features(ds_splits,
                           batch_size, 
                           epochs,
                           labels, 
-                          device):
+                          device, 
+                          embedding_folder_name):
     
     """
     Run classification model for all labels
@@ -65,7 +67,8 @@ def classify_all_features(ds_splits,
                             label,
                             batch_size, 
                             epochs, 
-                            device)
+                            device,
+                            embedding_folder_name)
             
             print(f'Classification done for {model_name} - {label}')
             log(f'Classification done for {model_name} - {label}')
@@ -147,7 +150,8 @@ def main():
                           args['batch_size'], 
                           args['epochs'],
                           args['label_cols'],
-                          device)
+                          device,
+                          args['embedding_folder_name'])
 
 if __name__ == '__main__':
     main()

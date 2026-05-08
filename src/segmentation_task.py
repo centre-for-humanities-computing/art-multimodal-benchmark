@@ -123,7 +123,7 @@ def inference_on_df(df: pd.DataFrame, image_column: str, prompt: str, confidence
     # Convert list of dicts to DataFrame
     output_df = pd.DataFrame(output_lists)
 
-    segmentation_path = os.path.join('data', 'segmentations')
+    segmentation_path = os.path.join('out', 'segmentations')
     os.makedirs(segmentation_path, exist_ok=True)
 
     output_df.to_csv(os.path.join(segmentation_path, f'{aug_name}_segmented.csv'))

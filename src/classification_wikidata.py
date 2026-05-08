@@ -34,6 +34,7 @@ def argument_parser():
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--lr', type=float, help='learning rate', default=0.01)
     parser.add_argument('--model_names', nargs='+', help='list of models to run classification task with')
+    parser.add_argument('--embedding_folder_name', type=str, help='Name of folder in data/ containing the embeddings')
 
     args = vars(parser.parse_args())
     return args 
@@ -233,7 +234,7 @@ def main():
         for model_name in args['model_names']:
 
             # load wikidata embeddings from disk
-            full_embedding_pt = torch.load(os.path.join('data', 'wikidata_embeddings', model_name, f'{model_name}_all_splits.pt'))
+            full_embedding_pt = torch.load(os.path.join('data', args['embedding_folder_name'], model_name, f'{model_name}_all_splits.pt'))
             train_loader, inp_size = create_dataloader(ds_splits_for_cv, full_embedding_pt, label, 'train', batch_size, 'old_indices')
             test_loader, _ = create_dataloader(ds_splits_for_cv, full_embedding_pt, label, 'test', batch_size, 'old_indices')
 

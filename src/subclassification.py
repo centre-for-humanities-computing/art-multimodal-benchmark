@@ -38,6 +38,8 @@ def argument_parser():
     parser.add_argument('--model_names', nargs='+', help='list of models to run classification task with')
     parser.add_argument('--savefile_suffix', type=str, help='suffix to add to saved files to identify classification task')
     parser.add_argument('--cv', action=argparse.BooleanOptionalAction, help='whether to run cross-validation', default=False)
+    parser.add_argument('--embedding_folder_name', type=str, help='Name of folder in data/ containing the embeddings')
+
     args = vars(parser.parse_args())
     
     return args
@@ -524,7 +526,7 @@ def main():
                 'test': ds_test}
             
             for model_name in args['model_names']:
-                full_embedding_pt = torch.load(os.path.join('data', 'filtered_embeddings_FINAL', model_name, f'{model_name}_all_splits.pt'))
+                full_embedding_pt = torch.load(os.path.join('data', args['embedding_folder_name'], model_name, f'{model_name}_all_splits.pt'))
                 train_loader, inp_size = create_dataloader(ds_splits_for_cv, full_embedding_pt, label, 'train', batch_size, 'old_indices')
                 test_loader, _ = create_dataloader(ds_splits_for_cv, full_embedding_pt, label, 'test', batch_size, 'old_indices')
 
@@ -593,7 +595,7 @@ def main():
         # loop over model(s) to be tested for the classification task
         for model_name in args['model_names']:
             # create dataloaders
-            full_embedding_pt = torch.load(os.path.join('data', 'filtered_embeddings_FINAL', model_name, f'{model_name}_all_splits.pt'))
+            full_embedding_pt = torch.load(os.path.join('data', args['embedding_folder_name'], model_name, f'{model_name}_all_splits.pt'))
             train_loader, inp_size = create_dataloader(ds_splits, full_embedding_pt, label, 'train', batch_size, 'old_indices')
             val_loader, _ = create_dataloader(ds_splits, full_embedding_pt, label, 'val', batch_size, 'old_indices')
             test_loader, _ = create_dataloader(ds_splits, full_embedding_pt, label, 'test', batch_size, 'old_indices')

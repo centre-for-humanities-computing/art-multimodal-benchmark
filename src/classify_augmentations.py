@@ -34,6 +34,7 @@ def argument_parser():
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--lr', type=float, help='learning rate', default=0.01)
     parser.add_argument('--model_names', nargs='+', help='list of models to run classification task with')
+    parser.add_argument('--embedding_folder_name', type=str, help='Name of folder in data/ containing the non-augmented embeddings')
 
     args = vars(parser.parse_args())
     return args 
@@ -336,7 +337,7 @@ def main():
             os.makedirs(out_folder, exist_ok=True)
 
             # load full, original embedding tensor
-            full_embedding_pt = torch.load(os.path.join('data', 'filtered_embeddings_FINAL', model_name, f'{model_name}_all_splits.pt'))
+            full_embedding_pt = torch.load(os.path.join('data', args['embedding_folder_name'], model_name, f'{model_name}_all_splits.pt'))
 
             # get non-augmented embeddings with train loader split 
             train_loader, inp_size = create_dataloader(ds_splits_for_cv, full_embedding_pt, label, 'train', batch_size, 'old_indices') # i can use the old_indices column because i have not reset it
