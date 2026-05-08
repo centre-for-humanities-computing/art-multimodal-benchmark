@@ -1,7 +1,6 @@
 """
 Augment images and apply tree segmentation framework
 """
-#import numpy as np
 import os
 import pandas as pd 
 import torch
@@ -12,7 +11,6 @@ import torchvision.transforms as T
 from PIL import Image
 from dotenv import load_dotenv
 from huggingface_hub import login
-#import numpy as np
 import sam3
 from PIL import Image
 from sam3.sam3.model_builder import build_sam3_image_model
@@ -26,11 +24,23 @@ import ast
 
 import sys
 sys.path.insert(0, 'src')
-from custom_augmentations_new import AddLayeredFrame, JPEGCompression, AddVignette, AddGrain, AddLightArtifact, RelativeGaussianBlur, FixedContrast, CannySketch, PencilSketchCustom
+from custom_augmentations import AddLayeredFrame, JPEGCompression, AddVignette, AddGrain, AddLightArtifact, RelativeGaussianBlur, FixedContrast, CannySketch, PencilSketchCustom
 sys.path.pop(0)
 
-def segment_image(model, img, prompt, confidence_threshold):
+def segment_image(model, img: Image.Image, prompt: str, confidence_threshold: float):
+    
+    """
+    Segment an image using a SAM3 model guided by a text prompt.
 
+    Args:
+        model: Loaded SAM3 model instance used to initialize the processor.
+        img: PIL image to segment.
+        prompt: Text description of the target object to segment.
+        confidence_threshold: Minimum confidence score for an object to be included in the output.
+
+    Returns:
+        Segmentation output containing masks and associated metadata.
+    """
     # load Sam3 model with weights from folder
     processor = Sam3Processor(model, confidence_threshold=confidence_threshold)
 
@@ -42,8 +52,25 @@ def segment_image(model, img, prompt, confidence_threshold):
 
     return output
 
-def inference_on_df(df, image_column, prompt, confidence_threshold, model, aug, aug_name):
+def inference_on_df(df: pd.DataFrame, image_column: str, prompt: str, confidence_threshold: float, model, aug: Callable, aug_name: str) -> None:
 
+    """
+    Run SAM3 segmentation on all images in a DataFrame and save results to CSV.
+
+    Iterates over each row, decodes the image bytes, applies an augmentation,
+    and segments the result. Failures are caught per-row and recorded as pd.NA
+    so the rest of the batch is unaffected. Results are written to
+    data/segmentations/<aug_name>_segmented.csv.
+
+    Args:
+        df: DataFrame where each row represents one image sample.
+        image_column: Name of the column containing image bytes stored as strings.
+        prompt: Text description of the target object(s) to segment.
+        confidence_threshold: Minimum confidence score for a segment to be included in the output.
+        model: Loaded SAM3 model instance.
+        aug: Augmentation callable that takes and returns a PIL image.
+        aug_name: Name for the augmentation, used in output filenames and logged in results.
+    """
     # initialize empty list to append results to
     output_lists = []
 
@@ -66,7 +93,7 @@ def inference_on_df(df, image_column, prompt, confidence_threshold, model, aug, 
             # segment image with sam3
             output = segment_image(model, augmented_img, prompt, confidence_threshold)
 
-            # save output in a pandas-friendly format FIX THIS
+            # save output in a pandas-friendly format
             output_dict = {'filename': row['filename'],
                             'aug': aug_name,
                             'scores': output['scores'].tolist(),
@@ -101,8 +128,6 @@ def inference_on_df(df, image_column, prompt, confidence_threshold, model, aug, 
 
     output_df.to_csv(os.path.join(segmentation_path, f'{aug_name}_segmented.csv'))
 
-    #return output_df
-
 def main():
     torch.autocast("cuda", dtype=torch.bfloat16).__enter__()
     # reads read HuggingFace token
@@ -110,7 +135,7 @@ def main():
     hf_token = os.getenv("hf_token")
     login()
 
-    # load SAM3 model
+    # load SAM3 model (if there's any issues with running the model, it's likely this path)
     bpe_path = os.path.join('sam3', 'sam3', 'assets', 'bpe_simple_vocab_16e6.txt.gz')
 
     model = build_sam3_image_model(bpe_path=bpe_path)
