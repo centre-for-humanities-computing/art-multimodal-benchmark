@@ -34,7 +34,6 @@ def argument_parser():
     parser.add_argument('--batch_size', type=int)
     parser.add_argument('--seed', type=int, help='seed for train/test splitting')
     parser.add_argument('--log_file_name', type=str, help='what to call the output logfile')
-    parser.add_argument('--model_names', nargs='+', help='list of models to run classification task with')
     parser.add_argument('--embedding_folder_name', type=str, help='name of folder in data/ with embeddings')
     args = vars(parser.parse_args())
     
@@ -142,7 +141,7 @@ def main():
     print(device)
 
     # loop over all models which embeddings have been extracted from
-    model_list = args['model_names']
+    model_list = os.listdir(os.path.join('data', args['embedding_folder_name']))
 
     for model_name in model_list:
         classify_all_features(ds_splits, 
