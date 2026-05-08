@@ -1,3 +1,7 @@
+"""
+Classify based on chosen 'subclassification', e.g., only using certain artists in the dataset.
+"""
+
 import datasets
 import numpy as np
 import os
@@ -5,11 +9,10 @@ from datasets import ClassLabel
 import pandas as pd 
 import torch
 import os
-from torch import optim, nn, utils
+from torch import optim, nn
 from torch.utils.data import Dataset
 import lightning as L
 from lightning.pytorch.callbacks import ModelCheckpoint
-#from lightning.pytorch.loggers.tensorboard import TensorBoardLogger
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from torch.utils.data import DataLoader
 from sklearn.metrics import classification_report
@@ -39,9 +42,22 @@ def argument_parser():
     
     return args
 
-def remap_features(ds_original, ds_filtered, label):
+def remap_features(ds_original: datasets.Dataset, ds_filtered: datasets.Dataset, label: str) -> datasets.Dataset:
+    '''
+    Resets ClassLabel mappings after filtering a HuggingFace dataset. 
+    When a HuggingFace dataset with a ClassLabel is filtered, it still saves the original Class mapping - even if some classes are filtered out.
+    This function resets that.
 
-    original_feature = ds_original.features[label] # the ClassLabel feature
+    Args:
+        ds_original: The original unfiltered dataset, used to access the original ClassLabel feature.
+        ds_filtered: The filtered dataset whose ClassLabel mapping needs to be reset.
+        label: The name of the ClassLabel column (e.g. 'artist' or 'genre').
+
+    Returns:
+        The filtered dataset with a corrected ClassLabel mapping.
+    '''
+    # get original classlabel features
+    original_feature = ds_original.features[label]
     original_names = original_feature.names
 
     # classes(names) in new subclassification dataset:
@@ -63,7 +79,25 @@ def remap_features(ds_original, ds_filtered, label):
 
     return ds_filtered
 
-def filter_data(ds, label, subclassification_task, seed, cv):
+def filter_data(ds: datasets.Dataset, label: str, subclassification_task: list, seed: int, cv: bool) -> datasets.Dataset:
+    """
+    Filters a dataset to a subset of classes and remaps its ClassLabel feature.
+
+    Selects only the rows whose label (as a string) is in the filtering parameter,
+    then remaps the ClassLabel feature to reflect only the remaining classes.
+
+    Args:
+        ds: The full dataset to filter.
+        label: The name of the ClassLabel column to filter on (e.g. 'artist' or 'genre').
+        subclassification_task: The class names to keep.
+        seed: unused here
+        cv: unused here
+
+    Returns:
+        The filtered dataset with remapped ClassLabel and an added 'old_indices' column
+        tracking each row's position in the original dataset.
+    """
+
     ds = ds.add_column('old_indices', range(len(ds)))
 
     # find the rows that matches the subclassification task
@@ -101,7 +135,28 @@ def filter_data(ds, label, subclassification_task, seed, cv):
     return ds_splits
 
 # DATALOADERS
-def create_dataloader(ds_splits, full_embedding_pt, label, split, batch_size, idx_column):
+def create_dataloader(ds_splits: dict, full_embedding_pt: torch.Tensor, label: str, split: str, batch_size: int, idx_column: str) -> tuple:
+   
+    """
+    Creates a DataLoader for a dataset split using precomputed embeddings.
+
+    Selects the relevant embeddings from a full embedding tensor using index
+    values stored in idx_column, pairs them with their labels, and wraps
+    them in a DataLoader. Training splits are shuffled, others are not.
+
+    Args:
+        ds_splits: A dict mapping split names to their HuggingFace datasets.
+        full_embedding_pt: Tensor of precomputed embeddings for all samples,
+                           indexed by the values in idx_column.
+        label: The ClassLabel column to use as targets (e.g. 'artist').
+        split: The dataset split to load, e.g. 'train', 'val', or 'test'.
+        batch_size: Number of samples per batch.
+        idx_column: Column in the dataset containing the indices into
+                    full_embedding_pt (e.g. 'old_indices').
+
+    Returns:
+        A tuple of (dataloader, embedding_size)
+    """
     class EmbeddingsDataset(Dataset):
         def __init__(self, embeddings, labels):
             self.embeddings = embeddings
@@ -115,12 +170,10 @@ def create_dataloader(ds_splits, full_embedding_pt, label, split, batch_size, id
 
     # load full embedding and split based on correct indices
     split_indices = ds_splits[split][idx_column]
-    #full_embedding_pt = torch.load(os.path.join('data', 'filtered_embeddings_FINAL', model_name, f'{model_name}_all_splits.pt'))
 
     filtered_embeddings = full_embedding_pt[split_indices] # grab embeddings based on column VALUES not positions
 
     # cast to float32
-    #embeddings_tensor = filtered_embeddings.float().to(device)
     embeddings_tensor = filtered_embeddings.float()
 
     y = ds_splits[split][label]
@@ -140,8 +193,23 @@ def create_dataloader(ds_splits, full_embedding_pt, label, split, batch_size, id
 
     return dataloader, embedding_size
 
-def build_model(hidden_layer_size, label, inp_size, dropout_p, ds_splits): # do you need device as well??
+def build_model(hidden_layer_size: int, label: str, inp_size: int, dropout_p: int, ds_splits: dict) -> nn.Sequential:
 
+    """
+    Builds an MLP classifier.
+
+    Args:
+        hidden_layer_size: Number of units in the hidden layer.
+        label: The ClassLabel column being classified, used to determine
+               the number of output classes.
+        inp_size: Dimensionality of the input embeddings.
+        dropout_p: Dropout probability.
+        ds_splits: A dict mapping split names to their HuggingFace datasets.
+                   The train split is used to determine the number of classes.
+
+    Returns:
+        MLP model
+    """
     num_classes = ds_splits['train'].features[label].num_classes
 
     model = nn.Sequential(
@@ -153,7 +221,25 @@ def build_model(hidden_layer_size, label, inp_size, dropout_p, ds_splits): # do 
 
     return model 
 
-def define_class_weights(ds_splits, label):
+def define_class_weights(ds_splits: dict, label: str) -> torch.Tensor:
+
+    """
+    Computes normalized inverse-frequency class weights from the training split.
+
+    Weights are computed as 1 / class_count and then normalized to sum to 1,
+    giving higher weight to underrepresented classes. Intended for use with
+    nn.CrossEntropyLoss(weight=...) to handle class imbalance.
+
+    Args:
+        ds_splits: A dict mapping split names to their HuggingFace datasets.
+                   Only the train split is used.
+        label: The ClassLabel column to compute weights for.
+
+    Returns:
+        A tensor of normalized class weights, one per class.
+    
+    """
+
     y_tensor = torch.tensor(ds_splits['train'][label])
     class_counts = torch.bincount(y_tensor)
     class_weights = 1.0 / class_counts.float() # weight the loss inversely proportional to class frequency
@@ -162,6 +248,14 @@ def define_class_weights(ds_splits, label):
     return class_weights
 
 class SubclassModel(L.LightningModule):
+
+    """
+    A LightningModule for multiclass classification using pre-computed embeddings.
+
+    The model uses a weighted cross-entropy loss, Adam optimizer,
+    and an exponential learning rate scheduler. Logs loss and accuracy at each
+    step and epoch during training and validation.
+    """
     def __init__(self, model, class_weights, lr, weight_decay, num_classes): # options to set some default parameters here
 
         super().__init__()
@@ -174,18 +268,7 @@ class SubclassModel(L.LightningModule):
         # buffer makes sure that class weights moves automatically to GPU
         self.register_buffer('class_weights', class_weights)
         self.loss_fn = nn.CrossEntropyLoss(weight=self.class_weights)
-
-        # define validation metrics
-        #self.val_precision = MulticlassPrecision(num_classes=num_classes, average="macro")
-        #self.val_recall = MulticlassRecall(num_classes=num_classes, average="macro")
-        #self.val_f1 = MulticlassF1Score(num_classes=num_classes, average="macro")
-
-        # define test metrics
-        #self.test_precision = MulticlassPrecision(num_classes=num_classes, average="macro")
-        #self.test_recall = MulticlassRecall(num_classes=num_classes, average="macro")
-        #self.test_f1 = MulticlassF1Score(num_classes=num_classes, average="macro")
     
-    # not exactly sure what this part is
     def forward(self, x):
         return self.model(x)
 
@@ -212,15 +295,8 @@ class SubclassModel(L.LightningModule):
 
         acc = (preds == y).float().mean()
 
-        #precision = self.val_precision(preds, y)
-        #recall = self.val_recall(preds, y)
-        #f1 = self.val_f1(preds, y)
-
         self.log('val_loss', loss)
         self.log('val_acc', acc)
-        #self.log('val_precision', precision)
-        #self.log('val_recall', recall)
-        #self.log('val_f1', f1)
 
     def test_step(self, batch, batch_idx):
         X, y = batch 
@@ -230,15 +306,9 @@ class SubclassModel(L.LightningModule):
         preds = output.argmax(1)
 
         acc = (preds == y).float().mean()
-        #precision = self.test_precision(preds, y)
-        #recall = self.test_recall(preds, y)
-        #f1 = self.test_f1(preds, y)
 
         self.log('test_loss', loss)
         self.log('test_acc', acc) 
-        #self.log('test_precision', precision)
-        #self.log('test_recall', recall)
-        #self.log('test_f1', f1)
     
     def predict_step(self, batch, batch_idx):
         X, y = batch
@@ -249,7 +319,7 @@ class SubclassModel(L.LightningModule):
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
-        scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9) # set gamma or make changeble parameter?
+        scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
 
         return { # has to be returned in a specific format
                 "optimizer": optimizer,
@@ -258,28 +328,57 @@ class SubclassModel(L.LightningModule):
                     "monitor": "val_loss",},
                 }
 
-def save_conf_matrix(model_name, y_true, y_pred, labels, task_name):
+def save_conf_matrix(model_name: str, y_true: list | np.ndarray, y_pred: list | np.ndarray, labels: list, task_name: str):
 
+    """
+    Compute and save a confusion matrix plot to disk. 
+
+    The matrix is normalized by true labels (i.e., each row sums to 1),
+    and saved as a PNG.
+
+    Args:
+        model_name: Name of the model, used as part of the output filename.
+        y_true:     True class indices.
+        y_pred:     Predicted class indices.
+        labels:     Class label names, ordered by class index.
+        task_name: name of subclassification task, to be used for save files.
+
+    """
+    # convert y true and y pred to tensors
     y_true = torch.tensor(y_true)
     y_pred = torch.tensor(y_pred)
 
+    # create confusion matrix
     num_labels = len(labels)
     confmat = ConfusionMatrix(task="multiclass", num_classes=num_labels, normalize="true")
     confmat(y_pred, y_true)
+    
+    # plot
     fig, ax = confmat.plot(add_text = True, labels = labels, cmap='winter')
 
+    # save plot to disk
     os.makedirs(os.path.join('out', 'subclassification_conf_matrices'), exist_ok=True)
     out_path = os.path.join("out", "subclassification_conf_matrices", f'{model_name}_{task_name}_confusion_matrix.png')
     fig.savefig(out_path, dpi=300, bbox_inches="tight")
 
-def plot_misclassifications(model_name, y_true, y_pred, test_data, task_name, label_col, num_examples = 20):
+def plot_misclassifications(model_name: str, y_true: np.ndarray, y_pred: np.ndarray, test_data: datasets.Dataset, task_name: str, label_col: str, num_examples: int = 20):
+
+    """
+    Saves a plot of randomly sampled misclassified images with their true and predicted labels.
+
+    Output is saved to out/misclassified_examples_subclassifications/<model_name>_<task_name>_misclassified.png.
+
+    Args:
+        model_name: Name of the embedding model, used when naming the output file.
+        y_true: Array of true class indices.
+        y_pred: Array of predicted class indices.
+        test_data: HuggingFace dataset containing the test images and label feature.
+        task_name: Name of the classification task, used in the plot title and output filename.
+        label_col: The ClassLabel column name, used to convert indices to label strings.
+        num_examples: Maximum number of misclassified examples to plot. Defaults to 20.
+    """
 
     misclass_indices = np.where(np.array(y_true) != np.array(y_pred))[0]
-    #misclassified = test_data.select(misclass_indices)
-
-    # randomly select indices
-    #selected_indices = random.sample(indices, min(num_examples, len(indices)))
-
     selected_indices = random.sample(list(misclass_indices), min(num_examples, len(misclass_indices)))
 
     # determine grid size
@@ -309,19 +408,23 @@ def plot_misclassifications(model_name, y_true, y_pred, test_data, task_name, la
     plt.savefig(save_path, dpi=300, bbox_inches="tight")
     plt.close()
 
-def save_results(test_data, y_pred, model_name, label_col, task_name):
+def save_results(test_data: datasets.Dataset, y_pred: np.ndarray, model_name: str, label_col: str, task_name: str) -> None:
 
-    '''
-    Save classification report on predicted versus true data
+    """
+    Saves a classification report, confusion matrix, and misclassification plot for a model.
+
+    Output files are saved to:
+        - out/subclassification_reports/<model_name>_<task_name>_subclassification_report.txt
+        - out/subclassification_conf_matrices/<model_name>_<task_name>_confusion_matrix.png
+        - out/misclassified_examples_subclassifications/<model_name>_<task_name>_misclassified.png
 
     Args:
-        - test_data: huggingface ds with test data
-        - feature_col: label of dataset classified, e.g., 'genre'
-        - embedding_col: name of column containing image embeddings
-        - y_pred: predicted y labels
-
-    '''
-    # FIX THIS? 
+        test_data: HuggingFace dataset containing the test images and true labels.
+        y_pred: Array of predicted class indices.
+        model_name: Name of the embedding model, used when naming output files.
+        label_col: The ClassLabel column name used as the classification target.
+        task_name: Name of the classification task, used when naming output files.
+    """
     labels = np.unique(test_data[label_col])
     target_names = [test_data.features[label_col].int2str(int(i)) for i in labels]
 
@@ -342,7 +445,16 @@ def save_results(test_data, y_pred, model_name, label_col, task_name):
     # save examples of misclassified images
     plot_misclassifications(model_name, np.array(test_data[label_col]), y_pred, test_data, task_name, label_col)
 
-def aggregate_results(model_scores, savefile_suffix):
+def aggregate_results(model_scores: dict, savefile_suffix: str) -> None:
+
+    """
+    Aggregates cross-validation scores across folds and saves a summary table to disk.
+
+    Args:
+        model_scores: A dict mapping model names to a list of per-fold score dicts,
+                      each containing 'acc', 'precision', 'recall', and 'f1'.
+        savefile_suffix: Suffix used when naming the output file.
+    """
     rows = []
 
     for model_name, scores in model_scores.items():
@@ -368,6 +480,7 @@ def aggregate_results(model_scores, savefile_suffix):
 
 def main():
 
+    # set lightning seed
     L.seed_everything(2830)
 
     # parse command line arguments
@@ -385,6 +498,7 @@ def main():
     label = args['subclass_label']
     ds_splits = filter_data(ds_full, label, classification_task, 2830, cv = args['cv']) 
         
+    # cross-validate
     if args['cv']:
 
         skf = StratifiedKFold(n_splits = 5, shuffle=True, random_state=2830) # shuffle=true?
@@ -412,7 +526,6 @@ def main():
             for model_name in args['model_names']:
                 full_embedding_pt = torch.load(os.path.join('data', 'filtered_embeddings_FINAL', model_name, f'{model_name}_all_splits.pt'))
                 train_loader, inp_size = create_dataloader(ds_splits_for_cv, full_embedding_pt, label, 'train', batch_size, 'old_indices')
-                #val_loader, _ = create_dataloader(ds_splits_for_cv, full_embedding_pt, label, 'val', batch_size, 'old_indices')
                 test_loader, _ = create_dataloader(ds_splits_for_cv, full_embedding_pt, label, 'test', batch_size, 'old_indices')
 
                 model_architecture = build_model(args['hidden_layer_size'], label, inp_size, 0.3, ds_splits_for_cv)
@@ -423,39 +536,19 @@ def main():
                 # define lightning model
                 model = SubclassModel(model_architecture, class_weights, lr=args['lr'], weight_decay=0.01, num_classes = ds_splits_for_cv['train'].features[label].num_classes)
 
-                #check_path = os.path.join('out', 'subclassification_checkpoints')
-                #os.makedirs(check_path, exist_ok=True)
-
-                # set callback & earlystopping
-                #checkpoint_callback = ModelCheckpoint(
-                 #                       dirpath=os.path.join(check_path, model_name),
-                  #                      monitor="val_loss",
-                   #                     filename=args['savefile_suffix']+"-{epoch:02d}-{val_loss:.2f}-{val_acc:.2f}",
-                    #                    save_top_k=2,
-                     #                   mode="min",
-                      #                  )
-                
-                #early_stopping = EarlyStopping(monitor="val_loss", patience=5, mode="min", verbose=False)
-
                 # fit model
                 trainer = L.Trainer(
                             max_epochs=args['epochs'],
-                            #callbacks=[checkpoint_callback],
                             accelerator="gpu" if torch.cuda.is_available() else "cpu",
                             devices="auto",
                             deterministic=True
                             )
                 
                 trainer.fit(model, train_loader)
-
-                # use best model across epochs
-                #best_model_path = checkpoint_callback.best_model_path
-
-                #model = SubclassModel.load_from_checkpoint(best_model_path)
-
                 test_metrics = trainer.test(model, test_loader)
 
                 # save across folds
+                # need to do torch.cat because all_preds_batches is returned per batch, not for the entire test-set
                 all_preds_batches = trainer.predict(model, test_loader)
                 all_preds = torch.cat([b[0] for b in all_preds_batches]).cpu().numpy()
                 all_probs = torch.cat([b[1] for b in all_preds_batches]).cpu().numpy()
@@ -463,6 +556,7 @@ def main():
                 y_true = torch.tensor(ds_splits_for_cv['test'][label])
                 all_preds_tensor = torch.tensor(all_preds)
 
+                # define and save macro-averaged evaluation metrics
                 num_classes = ds_splits_for_cv['train'].features[label].num_classes
                 
                 precision_fn = MulticlassPrecision(num_classes=num_classes, average="macro")
@@ -476,6 +570,7 @@ def main():
                     "f1": f1_fn(all_preds_tensor, y_true).item(),
                 })
 
+                # save fold-specific results for demonstration purposes only
                 if fold == 4:
                     save_results(
                         test_data = ds_splits_for_cv['test'],
@@ -489,6 +584,7 @@ def main():
         
             del ds_splits_for_cv, ds_train, ds_test
         
+        # average results across splits
         aggregate_results(model_scores, args['savefile_suffix'])
 
             

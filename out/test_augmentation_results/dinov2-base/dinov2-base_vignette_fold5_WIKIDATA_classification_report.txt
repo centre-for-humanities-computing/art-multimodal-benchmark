@@ -1,0 +1,11 @@
+                  precision    recall  f1-score   support
+
+   alfred-sisley       0.78      0.82      0.80        92
+camille-pissarro       0.85      0.85      0.85       171
+   edouard-manet       0.82      0.82      0.82        40
+   eugene-boudin       0.93      0.78      0.85        67
+    paul-cezanne       0.84      0.90      0.87       100
+
+        accuracy                           0.84       470
+       macro avg       0.84      0.83      0.84       470
+    weighted avg       0.84      0.84      0.84       470

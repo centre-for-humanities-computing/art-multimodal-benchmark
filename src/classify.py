@@ -1,3 +1,8 @@
+"""
+First-draft script for building classification model for embedding classification.
+Not updated to reflect the current dataset structure — would not recommend to use as-is.
+"""
+
 import torch 
 from torch import nn
 import torch.optim as optim
@@ -8,8 +13,23 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report
 
-# CHANGE INPUT HERE!!! to fit with defining num_classes and inp_size
-def build_classification_model(ds_splits, model_name, hidden_layer_size, label, batch_size, device, inp_size):
+def build_classification_model(ds_splits: dict, model_name: str, hidden_layer_size: int, label: str, batch_size: int, device: str, inp_size: int) -> dict:
+
+    """
+    Builds an MLP classifier with optimizer and learning rate scheduler.
+
+    Args:
+        ds_splits: A dict mapping split names to their HuggingFace datasets.
+        model_name: Name of the embedding model
+        hidden_layer_size: Hidden layer size
+        label: The ClassLabel column to classify (e.g. 'artist').
+        batch_size: Batch size used to compute the learning rate decay schedule.
+        device: Either 'cuda' or 'cpu'.
+        inp_size: Dimensions of the input embeddings.
+
+    Returns:
+        A dict with keys 'model', 'criterion', 'optimizer', and 'scheduler'.
+    """
 
     # get number of classes and embeddings dimensions
     num_classes = ds_splits['train'].features[label].num_classes
@@ -19,11 +39,9 @@ def build_classification_model(ds_splits, model_name, hidden_layer_size, label, 
         nn.ReLU(),
         nn.Linear(in_features=hidden_layer_size, out_features=num_classes)
             ).to(device) # use GPU if available
-    
-    # applying softmax is not necessary for CrossEntropyLoss?
 
     # Define loss function
-    criterion = nn.CrossEntropyLoss() # is it same as sparse-categorical-cross-entropy?
+    criterion = nn.CrossEntropyLoss()
 
     # define optimizer with learning rate scheduler and L2 regularization (==weight_decay - there's no direct kernel-regularizer keras equivalent in torch)
     optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=0.01) # apply to all hyperparameters of all layers
@@ -39,21 +57,26 @@ def build_classification_model(ds_splits, model_name, hidden_layer_size, label, 
                    'criterion': criterion,
                    'optimizer': optimizer,
                    'scheduler': scheduler}
-    # add softmax on output
 
-    # define learning rate schedule:
-        # exponential decayse,
-        # initial learning rate, 
-        # decay steps (based on steps per epoch)
-        # decay rate
+def create_dataloader(ds_splits: dict, model_name: str, label: str, split: str, batch_size: int, device: str) -> tuple:
+    """
+    Loads precomputed embeddings for a dataset split and wraps them in a DataLoader.
+    Training splits are shuffled, others are not.
 
-    # adam optimizer based on defined LR schedule
+    Args:
+        ds_splits: A dict mapping split names to their HuggingFace datasets,
+                   used to retrieve the labels for the given split.
+        model_name: Name of the embedding model, used to locate the embeddings
+                    file at data/embeddings/<model_name>/<model_name>_<split>.pt.
+        label: The ClassLabel column to use as targets (e.g. 'artist').
+        split: The dataset split to load, e.g. 'train', 'val', or 'test'.
+        batch_size: Number of samples per batch.
+        device: PyTorch device string, either 'cuda' or 'cpu'.
 
-    # loss function: sparse categorical crossentropy
-    # accuracy metric
-
-def create_dataloader(ds_splits, model_name, label, split, batch_size, device):
-    
+    Returns:
+        A tuple of (dataloader, embedding_size), where embedding_size is the
+        dimensionality of the loaded embeddings.
+    """
     class EmbeddingsDataset(Dataset):
         def __init__(self, embeddings, labels):
             self.embeddings = embeddings
@@ -65,7 +88,7 @@ def create_dataloader(ds_splits, model_name, label, split, batch_size, device):
         def __getitem__(self, idx):
             return self.embeddings[idx], self.labels[idx]
 
-    # Load embeddings and convert labels to tensors
+    # load embeddings and convert labels to tensors
     embeddings_tensor = torch.load(os.path.join('data', 'embeddings', model_name, f'{model_name}_{split}.pt'))
     
     # cast to float32
@@ -88,7 +111,7 @@ def create_dataloader(ds_splits, model_name, label, split, batch_size, device):
 
     return dataloader, embedding_size
 
-def save_plot_history(H, epochs, name):
+def save_plot_history(H: dict, epochs: int, name: str) -> None:
     '''
     Saves the validation and loss history plots of a fitted model in the 'out' folder.
     
@@ -126,9 +149,32 @@ def save_plot_history(H, epochs, name):
 
     plt.savefig(os.path.join(plots_dir_path, name))
 
-def build_training_loop(epochs, model_inits, dataloaders, model_name, label, device):
+def build_training_loop(epochs: int, model_inits: dict, dataloaders: dict, model_name: str, label: str, device: str) -> tuple:
+    """
+    Runs the full training, validation, and test loop.
 
-     # Early stopping setup
+    Trains the model with early stopping based on validation loss, then evaluates
+    the best checkpoint on the test set. Predictions are saved to disk at
+    out/y_pred/<model_name>_<label>_y_pred.npy.
+
+    Args:
+        epochs: Maximum number of training epochs.
+        model_inits: A dict containing 'model', 'criterion', 'optimizer', and
+                     'scheduler', as returned by build_classification_model().
+        dataloaders: A dict containing 'train_loader', 'val_loader', and
+                     'test_loader' DataLoaders.
+        model_name: Name of the embedding model, used when saving predictions.
+        label: The ClassLabel column being classified, used when saving predictions.
+        device: Either 'cuda' or 'cpu'.
+
+    Returns:
+        A tuple of (history, predictions), where history is a dict with keys
+        'train_loss', 'val_loss', 'train_accuracy', and 'val_accuracy' (each
+        a list of per-epoch values), and predictions is a list of predicted
+        class indices for the test set.
+    """
+
+    # early stopping setup
     best_val_loss = float('inf')
     patience = 5
     patience_counter = 0
@@ -266,7 +312,7 @@ def build_training_loop(epochs, model_inits, dataloaders, model_name, label, dev
 
     return history, predictions
 
-def save_classification_report(test_data, label_col, model_name, predicted_classes):
+def save_classification_report(test_data: datasets.Dataset, label_col: str, model_name: str, predicted_classes: list) -> None:
 
     '''
     Save classification report on predicted versus true data
@@ -304,13 +350,13 @@ def save_classification_report(test_data, label_col, model_name, predicted_class
     with open(out_path, 'w') as file:
                 file.write(report)
 
-
-def fit_and_predict(ds_splits, model_name, label, batch_size, hidden_layer_size, epochs, device):
+def fit_and_predict(ds_splits: dict, model_name: str, label: str, batch_size: int, hidden_layer_size: int, epochs: int, device: str) -> None:
 
     '''
+    Trains and evaluates a classifier on precomputed embeddings for a single label.
+    Builds dataloaders, initializes the model, runs the training loop and saves classification report
     Model name as in only name, not 'google/siglip...' path
-
-    This is the function we want to import to the other script
+    (This is the function we are importing to the other script)
     '''
 
     # define dataloaders

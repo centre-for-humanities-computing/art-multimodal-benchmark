@@ -1,25 +1,21 @@
-print('Importing modules...')
+"""
+Extract embeddings from WikiData dataset
+"""
+
 import pandas as pd
 import datasets
-from datasets import Image as Image_ds # change name because of similar PIL module
-from datasets import Dataset
 import os
-#from PIL import Image
 from tqdm import tqdm
 import torch
-#from datasets import load_dataset
 import numpy as np
-from PIL import Image
 import mteb
 import argparse 
-from functools import partial
-import matplotlib.pyplot as plt
 import torchvision.transforms as T
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
+from torch.utils.data import Dataset, DataLoader
 import time
 import timm
 
+# define argument parser
 def argument_parser():
 
     parser = argparse.ArgumentParser()
@@ -32,6 +28,11 @@ def argument_parser():
 
 # create custom HuggingFace dataset class to input to DataLoader
 class HFImageDataset(Dataset):
+
+    """
+    A PyTorch Dataset wrapper for a HF datasat with image data
+    (Necessary to wrap data like this to match expected input to a DataLoader)
+    """
     def __init__(self, hf_dataset, transform=None):
         self.dataset = hf_dataset
         self.transform = transform
@@ -49,14 +50,20 @@ class HFImageDataset(Dataset):
 def convert_to_rgb(img):
     return img.convert("RGB")
 
-def extract_embeddings(dataset, model):
-    # for large datasets, it is better to input DataLoaders to get_image_embeddings function rather than a list
+def extract_embeddings(dataset: datasets.Dataset, model) -> torch.Tensor | None:
 
-    # specify transforms; convert dataset image to PIL and np array (necessary as input to DataLoader)
+    """
+    Extract embeddings using an MTEB-loaded model.
+    For large datasets, it is better to input DataLoaders to get_image_embeddings function rather than a list.
 
-    def to_numpy_array(img):
-        return np.array(img)
+    Args:
+        dataset: HuggingFace Dataset with an 'image' column.
+        model:   MTEB model.
 
+    Returns:
+        A tensor of shape (N, embedding_dim), or None if an error occurs.
+    """
+    # specify transforms; convert image to RGB 
     transform = T.Compose([
         convert_to_rgb
     ])  
@@ -69,9 +76,10 @@ def extract_embeddings(dataset, model):
     try:
         wrapped_dataset = HFImageDataset(hf_dataset=dataset, transform=transform)
 
+        # create dataloader with wrapped dataset
         dataloader = DataLoader(wrapped_dataset, batch_size=32, shuffle=False, collate_fn=pil_collate_fn)
     
-        # process images in batches from dataloader
+        # process images in batches from dataloader (function automatically applies model-specific preprocessing)
         embeddings = model.get_image_embeddings(dataloader)
 
         return embeddings
@@ -80,7 +88,17 @@ def extract_embeddings(dataset, model):
         print(f'Error processing images with model: {model}, {e}')
         return None
 
-def extract_eva_embeddings(ds):
+def extract_eva_embeddings(ds: datasets.Dataset) -> torch.Tensor:
+
+    """
+    Extract image embeddings using the EVA02 CLIP model from timm (PyTorch Image Models), as EVA is more easily implemented through this package.
+
+    Args:
+        ds: HuggingFace Dataset with an 'image' column.
+
+    Returns:
+        A tensor of shape (N, embedding_dim) containing all image embeddings.
+    """
 
     # load model from timm
     model = timm.create_model('eva02_large_patch14_clip_336.merged2b', pretrained=True, num_classes=0)
@@ -117,11 +135,11 @@ def extract_eva_embeddings(ds):
 def main():
 
     args = argument_parser()
-    # load data parquet file:
-    
-    data_path = os.path.join('data', args['dataset'])
 
+    # load data
+    data_path = os.path.join('data', args['dataset'])
     ds = datasets.load_from_disk(data_path) 
+    
     # remove old 'image' column
     ds = ds.remove_columns(["image"])
 

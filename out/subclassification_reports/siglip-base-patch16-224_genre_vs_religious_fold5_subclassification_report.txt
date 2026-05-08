@@ -1,0 +1,8 @@
+                    precision    recall  f1-score   support
+
+    genre_painting       0.97      0.89      0.93      1094
+religious_painting       0.82      0.96      0.89       602
+
+          accuracy                           0.91      1696
+         macro avg       0.90      0.92      0.91      1696
+      weighted avg       0.92      0.91      0.91      1696

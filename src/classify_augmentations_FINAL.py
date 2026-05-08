@@ -7,12 +7,9 @@ import numpy as np
 import os
 import torch
 import pandas as pd
-from torch import optim, nn, utils
+from torch import optim, nn
 from torch.utils.data import Dataset
 import lightning as L
-from lightning.pytorch.callbacks import ModelCheckpoint
-#from lightning.pytorch.loggers.tensorboard import TensorBoardLogger
-from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from torch.utils.data import DataLoader
 from sklearn.metrics import classification_report
 from torchmetrics.classification import ConfusionMatrix
@@ -22,10 +19,11 @@ import math
 import matplotlib.pyplot as plt
 from sklearn.model_selection import StratifiedKFold
 from torchmetrics.classification import MulticlassPrecision, MulticlassRecall, MulticlassF1Score
-import torchvision.transforms as T
 
-from subclf_updated import remap_features, create_dataloader, build_model, define_class_weights, save_conf_matrix, plot_misclassifications, save_results, remap_features, filter_data
+# import from own script
+from subclf_updated import create_dataloader, build_model, define_class_weights, filter_data
 
+# define arguments
 def argument_parser():
 
     parser = argparse.ArgumentParser()
@@ -40,8 +38,25 @@ def argument_parser():
     args = vars(parser.parse_args())
     return args 
 
-# run this function on all kinds of embeddings
-def create_test_loader(test_data, test_embeddings, label, batch_size):
+def create_test_loader(test_data: datasets.Dataset, test_embeddings: torch.Tensor, label: str, batch_size: int) -> DataLoader:
+
+    """
+    Create a DataLoader for test embeddings.
+
+    Wraps pre-computed embeddings and their corresponding labels into a
+    DataLoader with no shuffling
+
+    Args:
+        test_data:       HuggingFace Dataset containing the label column.
+        test_embeddings: Embeddings tensor of shape (N, embedding_dim).
+        label:           Name of the label column in test_data.
+        batch_size:      Number of samples per batch.
+
+    Returns:
+        A DataLoader yielding (embedding, label) pairs.
+    """
+
+    # define custom embeddings dataset that just has embeddings + corresponding labels
     class EmbeddingsDataset(Dataset):
         def __init__(self, embeddings, labels):
             self.embeddings = embeddings
@@ -58,27 +73,64 @@ def create_test_loader(test_data, test_embeddings, label, batch_size):
     y = test_data[label]
     labels_tensor = torch.tensor(y)
 
+    # create embeddings dataset and wrap in dataloader
     dataset = EmbeddingsDataset(embeddings_tensor, labels_tensor)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
 
     return dataloader
 
-# saving functions:
-def save_conf_matrix(model_name, y_true, y_pred, labels, aug_name, save_folder):
+def save_conf_matrix(model_name: str, y_true: list | np.ndarray, y_pred: list | np.ndarray, labels: list, aug_name: str, save_folder: str) -> None:
+    """
+    Compute and save a confusion matrix plot to disk. 
 
+    The matrix is normalized by true labels (i.e., each row sums to 1),
+    and saved as a PNG.
+
+    Args:
+        model_name: Name of the model, used as part of the output filename.
+        y_true:     True class indices.
+        y_pred:     Predicted class indices.
+        labels:     Class label names, ordered by class index.
+        aug_name:   Name of the augmentation applied, used in the output filename.
+        save_folder: Directory to save the plot.
+
+    """
+
+    # convert y true and y pred to tensors
     y_true = torch.tensor(y_true)
     y_pred = torch.tensor(y_pred)
 
+    # create confusion matrix
     num_labels = len(labels)
     confmat = ConfusionMatrix(task="multiclass", num_classes=num_labels, normalize="true")
     confmat(y_pred, y_true)
+
+    # plot
     fig, ax = confmat.plot(add_text = True, labels = labels, cmap='winter')
 
+    # save plot to disk
     out_path = os.path.join(save_folder, f'{model_name}_{aug_name}_confusion_matrix.png')
     fig.savefig(out_path, dpi=300, bbox_inches="tight")
 
-def save_results(test_data, y_pred, model_name, label_col, aug_name, save_folder):
+def save_results(test_data: datasets.Dataset, y_pred: np.ndarray, model_name: str, label_col: str, aug_name: str, save_folder: str) -> None:
 
+    """
+    Save a classification report and confusion matrix for a given model and augmentation.
+
+    Generates a per-class classification report (precision, recall, F1) and a
+    normalized confusion matrix, saving both to save_folder.
+
+    Args:
+        test_data:   HuggingFace Dataset containing the ground truth label column,
+                     which must be a ClassLabel feature.
+        y_pred:      Predicted class indices.
+        model_name:  Name of the model, used in output filenames.
+        label_col:   Name of the label column in test_data.
+        aug_name:    Name of the augmentation applied, used in output filenames.
+        save_folder: Directory to save the classification report and confusion matrix.
+    """
+
+    # get label strings
     labels = np.unique(test_data[label_col])
     target_names = [test_data.features[label_col].int2str(int(i)) for i in labels]
 
@@ -86,7 +138,6 @@ def save_results(test_data, y_pred, model_name, label_col, aug_name, save_folder
     report = classification_report(np.array(test_data[label_col]),
                            y_pred, target_names = target_names)
     
-    # save classification report
     out_path = os.path.join(save_folder, f'{model_name}_{aug_name}_classification_report.txt')
 
     with open(out_path, 'w') as file:
@@ -96,7 +147,20 @@ def save_results(test_data, y_pred, model_name, label_col, aug_name, save_folder
     save_conf_matrix(model_name, np.array(test_data[label_col]), y_pred, target_names, aug_name, save_folder)
 
 # save mean results across augmentations, across CV folds, for each model
-def aggregate_results(model_scores):
+def aggregate_results(model_scores: dict) -> None:
+
+    """
+    Summarize per-fold scores across models and save the results table to disk.
+
+    For each model and each augmentation, computes the mean and standard deviation across folds for
+    accuracy, precision, recall, and macro F1. Prints the summary table and
+    saves it as a text file under out/test_augmentation_results/.
+
+    Args:
+        model_scores:    A dict that maps model names to a list of per-fold score
+                        dicts, each containing keys 'acc', 'precision',
+                        'recall', and 'f1'.
+    """
     rows = []
 
     for model_name, aug_dict in model_scores.items():
@@ -123,7 +187,16 @@ def aggregate_results(model_scores):
         f.write(results_table.to_string())
 
 class SubclassModel(L.LightningModule):
-    def __init__(self, model, class_weights, lr, weight_decay, num_classes): # options to set some default parameters here
+
+    """
+    A LightningModule for multiclass classification using pre-computed embeddings.
+
+    The model uses a weighted cross-entropy loss, Adam optimizer,
+    and an exponential learning rate scheduler. Logs loss and accuracy at each
+    step and epoch during training and validation.
+
+    """
+    def __init__(self, model, class_weights, lr, weight_decay, num_classes):
 
         super().__init__()
 
@@ -136,7 +209,6 @@ class SubclassModel(L.LightningModule):
         self.register_buffer('class_weights', class_weights)
         self.loss_fn = nn.CrossEntropyLoss(weight=self.class_weights)
     
-    # not exactly sure what this part is
     def forward(self, x):
         return self.model(x)
 
@@ -163,15 +235,8 @@ class SubclassModel(L.LightningModule):
 
         acc = (preds == y).float().mean()
 
-        #precision = self.val_precision(preds, y)
-        #recall = self.val_recall(preds, y)
-        #f1 = self.val_f1(preds, y)
-
         self.log('val_loss', loss)
         self.log('val_acc', acc)
-        #self.log('val_precision', precision)
-        #self.log('val_recall', recall)
-        #self.log('val_f1', f1)
 
     def test_step(self, batch, batch_idx):
         X, y = batch 
@@ -181,15 +246,9 @@ class SubclassModel(L.LightningModule):
         preds = output.argmax(1)
 
         acc = (preds == y).float().mean()
-        #precision = self.test_precision(preds, y)
-        #recall = self.test_recall(preds, y)
-        #f1 = self.test_f1(preds, y)
 
         self.log('test_loss', loss)
         self.log('test_acc', acc) 
-        #self.log('test_precision', precision)
-        #self.log('test_recall', recall)
-        #self.log('test_f1', f1)
     
     def predict_step(self, batch, batch_idx):
         X, y = batch
@@ -211,6 +270,7 @@ class SubclassModel(L.LightningModule):
 
 def main():
 
+    # set seed for all lightning functions
     L.seed_everything(2830)
 
     # parse args
@@ -229,7 +289,17 @@ def main():
     label = 'artist'
 
     # specify list of applied augmentations:
-    augmentations = ['strong_blur', 'grayscale', 'contrast', 'frame', 'jpeg_compr', 'vignette', 'weak_grain', 'light_artifact', 'Canny_sketch', 'pencil_sketch']
+    augmentations = ['strong_blur',
+                    'grayscale', 
+                    'contrast', 
+                    'frame', 
+                    'jpeg_compr', 
+                    'vignette', 
+                    'weak_grain', 
+                    'light_artifact', 
+                    'Canny_sketch', 
+                    'pencil_sketch'
+                    ]
 
     # initialize model_scores dictionary
     model_scores = {}
@@ -258,6 +328,7 @@ def main():
                             'train': ds_train,
                             'test': ds_test}
         
+        # for this split, for each model, fit a single model on the non-augmented train data, and predict on a test set for each augmentation (so same image, but augmented differently)
         for model_name in args['model_names']:
             os.makedirs(os.path.join('out', 'test_augmentation_results'), exist_ok=True)
 
@@ -290,6 +361,7 @@ def main():
             # fit on training data (un-augmented embeddings)
             trainer.fit(model, train_loader)
 
+            # test on augmented embeddings of test split
             for aug in augmentations:
 
                 print(f"PREDICTING ON {aug} TEST DATA")
@@ -317,6 +389,7 @@ def main():
                 y_true = torch.tensor(ds_splits_for_cv['test'][label])
                 all_preds_tensor = torch.tensor(all_preds) # make predictions into tensor
 
+                # define and save macro-averaged evaluation metrics
                 num_classes = ds_splits_for_cv['train'].features[label].num_classes
                 
                 precision_fn = MulticlassPrecision(num_classes=num_classes, average="macro")
@@ -330,6 +403,7 @@ def main():
                     "f1": f1_fn(all_preds_tensor, y_true).item(),
                 })
 
+                # save fold-specific results for demonstration purposes only
                 if fold == 4:
                     save_results(
                         test_data = ds_splits_for_cv['test'],
@@ -346,6 +420,7 @@ def main():
                         all_probs
                     )
 
+                # clean up
                 del full_aug_embeddings
                 del test_aug_embeddings
                 del test_loader
@@ -359,7 +434,7 @@ def main():
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
 
-            # fit model without augmentations:
+            # test model without augmentations on the same test-split
             test_loader, _ = create_dataloader(ds_splits_for_cv, full_embedding_pt, label, 'test', batch_size, 'old_indices') # 
             test_metrics = trainer.test(model, test_loader)
 
@@ -399,6 +474,7 @@ def main():
                     all_probs
                 )
 
+            # clean up
             del full_embedding_pt
             del model 
             del trainer
@@ -407,6 +483,7 @@ def main():
             del all_preds_tensor
             del test_loader
 
+    # save results across folds
     aggregate_results(model_scores)
 
 if __name__ == '__main__':

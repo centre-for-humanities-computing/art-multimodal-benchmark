@@ -1,24 +1,23 @@
+"""
+First-draft script for extracting embeddings via MTEB and running a classification model.
+Not updated to reflect the current dataset structure — would not recommend to use as-is
+"""
+
 print('Importing modules...')
 import pandas as pd
 import datasets
-#from datasets import Image as Image_ds # change name because of similar PIL module
-from datasets import Dataset
 import os
-#from PIL import Image
 from tqdm import tqdm
 import torch
-#from datasets import load_dataset
 import numpy as np
 from PIL import Image
 import mteb
 import argparse 
-from functools import partial
-import matplotlib.pyplot as plt
 from torchvision import transforms
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 
-# IMPORT fit_and_predict from classify.py script
+# import fit_and_predict from classify.py script
 import sys
 sys.path.append(os.path.dirname(__file__))
 from classify import fit_and_predict
@@ -40,7 +39,6 @@ def argument_parser():
     return args
 
 # log error messages and save to file
-
 def log(message):
     global LOG_FILE_NAME
     log_path = os.path.join('out', 'logs')
@@ -49,11 +47,22 @@ def log(message):
     with open(os.path.join(log_path, f'{LOG_FILE_NAME}.txt'), "a") as f:
         f.write(message + "\n")
 
-def extract_embeddings(dataset, model):
-    # for large datasets, it is better to input DataLoaders to get_image_embeddings function rather than a list
+def extract_embeddings(dataset: datasets.Dataset, model) -> torch.Tensor | None:
+    
+    """
+    Extract embeddings using an MTEB-loaded model.
+    For large datasets, it is better to input DataLoaders to get_image_embeddings function rather than a list.
+
+    Args:
+        dataset: HuggingFace Dataset with an 'image' column.
+        model:   MTEB model.
+
+    Returns:
+        A tensor of shape (N, embedding_dim), or None if an error occurs.
+
+    """
 
     # specify transforms; convert dataset image to PIL and np array (necessary as input to DataLoader)
-    
     def convert_to_rgb(img):
         return img.convert("RGB")
 
@@ -89,6 +98,7 @@ def extract_embeddings(dataset, model):
     try:
         wrapped_dataset = HFImageDataset(hf_dataset=dataset, transform=transform)
 
+        # create dataloader with wrapped dataset
         dataloader = DataLoader(wrapped_dataset, batch_size=32, shuffle=False, collate_fn=pil_collate_fn)
     
         # process images in batches from dataloader
@@ -101,7 +111,22 @@ def extract_embeddings(dataset, model):
         print(f'Error processing images with model: {model}')
         return None
 
-def embeddings_from_splits(ds_splits, model_path):
+def embeddings_from_splits(ds_splits: dict, model_path: str) -> None:
+
+    """
+    Extracts image embeddings for each dataset split and saves them to disk.
+
+    Loads a model from MTEB, extracts embeddings for each split, and saves
+    them as .pt files under data/embeddings/<model_name>/.
+
+    Args:
+        ds_splits: A dict mapping split names (e.g. 'train', 'test', 'val')
+                   to their corresponding HuggingFace datasets.
+        model_path: The HuggingFace model path (e.g. 'facebook/dinov2-base').
+
+    Raises:
+        ValueError: If embedding extraction returns None for any split.
+    """
 
     # get model meta and load model
     model_meta = mteb.get_model_meta(model_path)
@@ -150,13 +175,29 @@ def embeddings_from_splits(ds_splits, model_path):
         torch.cuda.empty_cache()
 
 
-def classify_all_features(ds_splits, 
-                          model_name,
-                          hidden_layer_size, 
-                          batch_size, 
-                          epochs,
-                          labels, 
-                          device):
+def classify_all_features(ds_splits: dict, 
+                          model_name: str,
+                          hidden_layer_size: int, 
+                          batch_size: int, 
+                          epochs: int,
+                          labels: list, 
+                          device: str) -> None:
+    
+    """
+    Runs classification for each label column using precomputed embeddings.
+
+    For each label, calls fit_and_predict(), which fits a classification models on train+val data and fits on test data.
+
+    Args:
+        ds_splits: A dict mapping split names (e.g. 'train', 'test', 'val')
+                   to their corresponding HuggingFace datasets.
+        model_name: Name of the embedding model (e.g. 'dinov2-base').
+        hidden_layer_size: Number of units in the hidden layer of the classifier.
+        batch_size: Batch size used during classifier training.
+        epochs: Number of training epochs for the classifier.
+        labels: List of ClassLabel column names to classify (e.g. ['artist', 'style', 'genre']).
+        device: either 'cuda' or 'cpu'.
+    """
 
     for label in labels:
         try:
@@ -186,6 +227,7 @@ def main():
 
     data_name = args['dataset']
 
+    # load data
     ds_train = datasets.load_from_disk(os.path.join('data', f'{data_name}_train'))
     ds_test = datasets.load_from_disk(os.path.join('data', f'{data_name}_test'))
     ds_val = datasets.load_from_disk(os.path.join('data', f'{data_name}_val'))
@@ -202,6 +244,7 @@ def main():
     # extract embeddings and save to file
     embeddings_from_splits(ds_splits, args['model_path'])
 
+    # only save model name and not full path
     model_name = args['model_path'].split('/')[1]
 
     # Now I should have all data needed for running classify.py scripts

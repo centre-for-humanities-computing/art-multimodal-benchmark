@@ -1,0 +1,11 @@
+                     precision    recall  f1-score   support
+
+      Alfred Sisley       0.92      1.00      0.96       158
+   Camille Pissarro       0.99      0.90      0.95       146
+Eugène Louis Boudin       1.00      0.98      0.99       115
+       Paul Cézanne       1.00      0.94      0.97       134
+      Édouard Manet       0.87      1.00      0.93        67
+
+           accuracy                           0.96       620
+          macro avg       0.96      0.97      0.96       620
+       weighted avg       0.96      0.96      0.96       620

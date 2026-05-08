@@ -1,19 +1,13 @@
+"""
+Create custom augmentations formatted as callable classes
+"""
 import numpy as np
 import os
-from PIL import Image
-#import torch
-from tqdm import tqdm
-from collections import Counter
 import torchvision.transforms as T
 import matplotlib.pyplot as plt
-import random
-import math
-from PIL import Image, ImageDraw, ImageFilter, ImageOps
+from PIL import Image, ImageDraw, ImageFilter
 import io
 import cv2
-
-# add brown boarder, simulating a frame
-from PIL import Image, ImageDraw
 
 class AddLayeredFrame:
 
