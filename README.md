@@ -107,6 +107,8 @@ In the main folder, set up virtual environment and install required packages wit
 bash setup.sh
 ```
 
+Make sure all scripts are run from the main folder, i.e., *art-multimodal-benchmark*.
+
 ### Extract embeddings
 To run feature extraction with predefined arguments, run: 
 
