@@ -1,0 +1,28 @@
+[DINOv2-base_patches] GPU 1  variant=patches  mining=semi_hard
+[DINOv2-base_patches] image_size=224  input_dim=2304  epochs=20  pairs=1500  batch=32  margin=0.5
+[DINOv2-base_patches] Building descriptor cache...
+[DINOv2-base_patches] Cached 834 images (104 probe) / 834 tokens → cache/DINOv2-base_patches.pt
+[DINOv2-base_patches] ep 1/20  loss=0.4951(diag)  lr=1.95e-05  acc=0.745  R@1=0.490  R@5=0.764  R@10=0.859  probe_known_R@1=0.511  probe_new_R@1=0.754  gap=0.084  pos=0.786  neg=0.701  [best]
+[DINOv2-base_patches] ep 2/20  loss=0.4799(diag)  lr=1.90e-05  acc=0.827  R@1=0.552  R@5=0.793  R@10=0.885  probe_known_R@1=0.660  probe_new_R@1=0.737  gap=0.250  pos=0.477  neg=0.227  [best]
+[DINOv2-base_patches] ep 3/20  loss=0.4848(diag)  lr=1.82e-05  acc=0.779  R@1=0.545  R@5=0.762  R@10=0.827  probe_known_R@1=0.553  probe_new_R@1=0.772  gap=0.199  pos=0.538  neg=0.338
+[DINOv2-base_patches] ep 4/20  loss=0.4198(diag)  lr=1.72e-05  acc=0.811  R@1=0.553  R@5=0.774  R@10=0.864  probe_known_R@1=0.660  probe_new_R@1=0.719  gap=0.251  pos=0.477  neg=0.226  [best]
+[DINOv2-base_patches] ep 5/20  loss=0.4396(diag)  lr=1.61e-05  acc=0.796  R@1=0.582  R@5=0.784  R@10=0.863  probe_known_R@1=0.660  probe_new_R@1=0.737  gap=0.210  pos=0.601  neg=0.392  [best]
+[DINOv2-base_patches] ep 6/20  loss=0.4405(diag)  lr=1.48e-05  acc=0.846  R@1=0.593  R@5=0.808  R@10=0.878  probe_known_R@1=0.638  probe_new_R@1=0.737  gap=0.322  pos=0.456  neg=0.134  [best]
+[DINOv2-base_patches] ep 7/20  loss=0.4323(diag)  lr=1.34e-05  acc=0.800  R@1=0.607  R@5=0.805  R@10=0.873  probe_known_R@1=0.574  probe_new_R@1=0.719  gap=0.235  pos=0.568  neg=0.334  [best]
+[DINOv2-base_patches] ep 8/20  loss=0.4105(diag)  lr=1.20e-05  acc=0.838  R@1=0.605  R@5=0.834  R@10=0.900  probe_known_R@1=0.681  probe_new_R@1=0.737  gap=0.303  pos=0.505  neg=0.202
+[DINOv2-base_patches] ep 9/20  loss=0.4315(diag)  lr=1.05e-05  acc=0.850  R@1=0.637  R@5=0.822  R@10=0.885  probe_known_R@1=0.723  probe_new_R@1=0.825  gap=0.321  pos=0.511  neg=0.190  [best]
+[DINOv2-base_patches] ep 10/20  loss=0.4397(diag)  lr=9.01e-06  acc=0.823  R@1=0.604  R@5=0.808  R@10=0.877  probe_known_R@1=0.660  probe_new_R@1=0.649  gap=0.279  pos=0.538  neg=0.259
+[DINOv2-base_patches] ep 11/20  loss=0.4044(diag)  lr=7.56e-06  acc=0.851  R@1=0.651  R@5=0.834  R@10=0.889  probe_known_R@1=0.660  probe_new_R@1=0.754  gap=0.360  pos=0.490  neg=0.130  [best]
+[DINOv2-base_patches] ep 12/20  loss=0.4287(diag)  lr=6.19e-06  acc=0.833  R@1=0.629  R@5=0.818  R@10=0.879  probe_known_R@1=0.681  probe_new_R@1=0.684  gap=0.254  pos=0.576  neg=0.322
+[DINOv2-base_patches] ep 13/20  loss=0.3899(diag)  lr=4.92e-06  acc=0.862  R@1=0.652  R@5=0.851  R@10=0.900  probe_known_R@1=0.660  probe_new_R@1=0.772  gap=0.345  pos=0.504  neg=0.158  [best]
+[DINOv2-base_patches] ep 14/20  loss=0.4399(diag)  lr=3.78e-06  acc=0.830  R@1=0.640  R@5=0.823  R@10=0.896  probe_known_R@1=0.681  probe_new_R@1=0.684  gap=0.245  pos=0.579  neg=0.334
+[DINOv2-base_patches] ep 15/20  loss=0.4214(diag)  lr=2.81e-06  acc=0.858  R@1=0.652  R@5=0.840  R@10=0.897  probe_known_R@1=0.702  probe_new_R@1=0.737  gap=0.336  pos=0.535  neg=0.200
+[DINOv2-base_patches] ep 16/20  loss=0.4562(diag)  lr=2.04e-06  acc=0.873  R@1=0.663  R@5=0.864  R@10=0.914  probe_known_R@1=0.681  probe_new_R@1=0.754  gap=0.383  pos=0.498  neg=0.114  [best]
+[DINOv2-base_patches] ep 17/20  loss=0.4781(diag)  lr=1.46e-06  acc=0.903  R@1=0.690  R@5=0.885  R@10=0.937  probe_known_R@1=0.702  probe_new_R@1=0.807  gap=0.380  pos=0.541  neg=0.161  [best]
+[DINOv2-base_patches] ep 18/20  loss=0.4829(diag)  lr=1.12e-06  acc=0.892  R@1=0.719  R@5=0.900  R@10=0.938  probe_known_R@1=0.681  probe_new_R@1=0.860  gap=0.382  pos=0.524  neg=0.142  [best]
+[DINOv2-base_patches] ep 19/20  loss=0.4870(diag)  lr=1.00e-06  acc=0.893  R@1=0.710  R@5=0.892  R@10=0.942  probe_known_R@1=0.702  probe_new_R@1=0.842  gap=0.373  pos=0.536  neg=0.163
+[DINOv2-base_patches] ep 20/20  loss=0.4885(diag)  lr=1.12e-06  acc=0.901  R@1=0.701  R@5=0.886  R@10=0.949  probe_known_R@1=0.702  probe_new_R@1=0.825  gap=0.371  pos=0.537  neg=0.166
+[DINOv2-base_patches] Plot → logs/DINOv2-base_patches_training.png
+[DINOv2-base_patches] Saved checkpoints/DINOv2-base_patches.pt  (4.7 min)  best R@1=0.719  R@5=0.900  R@10=0.938  acc=0.892
+[DINOv2-base_patches] Deleted cache: cache/DINOv2-base_patches.pt
+[DINOv2-base_patches] Cleared HF cache: ['/home/ucloud/.cache/huggingface/hub/models--facebook--dinov2-base']

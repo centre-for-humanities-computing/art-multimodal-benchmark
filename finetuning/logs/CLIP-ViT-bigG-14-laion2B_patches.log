@@ -1,0 +1,38 @@
+[CLIP-ViT-bigG-14-laion2B_patches] GPU 0  variant=patches  mining=semi_hard
+[CLIP-ViT-bigG-14-laion2B_patches] image_size=224  input_dim=4992  epochs=30  pairs=1500  batch=32  margin=0.5
+[CLIP-ViT-bigG-14-laion2B_patches] Building descriptor cache...
+[CLIP-ViT-bigG-14-laion2B_patches] Cached 834 images (104 probe) / 834 tokens → cache/CLIP-ViT-bigG-14-laion2B_patches.pt
+[CLIP-ViT-bigG-14-laion2B_patches] ep 1/30  loss=0.4892(diag)  lr=9.89e-05  acc=0.577  R@1=0.241  R@5=0.542  R@10=0.696  probe_known_R@1=0.191  probe_new_R@1=0.684  gap=0.010  pos=0.959  neg=0.949  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 2/30  loss=0.4997(diag)  lr=9.76e-05  acc=0.630  R@1=0.244  R@5=0.548  R@10=0.719  probe_known_R@1=0.170  probe_new_R@1=0.649  gap=0.009  pos=0.978  neg=0.970  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 3/30  loss=0.4969(diag)  lr=9.57e-05  acc=0.637  R@1=0.241  R@5=0.590  R@10=0.745  probe_known_R@1=0.191  probe_new_R@1=0.737  gap=0.079  pos=0.715  neg=0.636
+[CLIP-ViT-bigG-14-laion2B_patches] ep 4/30  loss=0.4997(diag)  lr=9.34e-05  acc=0.688  R@1=0.247  R@5=0.581  R@10=0.730  probe_known_R@1=0.213  probe_new_R@1=0.737  gap=0.002  pos=0.995  neg=0.992  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 5/30  loss=0.4999(diag)  lr=9.05e-05  acc=0.690  R@1=0.288  R@5=0.593  R@10=0.737  probe_known_R@1=0.149  probe_new_R@1=0.754  gap=0.002  pos=0.995  neg=0.993  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 6/30  loss=0.4999(diag)  lr=8.73e-05  acc=0.683  R@1=0.288  R@5=0.618  R@10=0.766  probe_known_R@1=0.255  probe_new_R@1=0.772  gap=0.002  pos=0.995  neg=0.993
+[CLIP-ViT-bigG-14-laion2B_patches] ep 7/30  loss=0.4999(diag)  lr=8.36e-05  acc=0.720  R@1=0.300  R@5=0.633  R@10=0.784  probe_known_R@1=0.255  probe_new_R@1=0.772  gap=0.002  pos=0.995  neg=0.992  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 8/30  loss=0.4999(diag)  lr=7.96e-05  acc=0.713  R@1=0.310  R@5=0.632  R@10=0.779  probe_known_R@1=0.255  probe_new_R@1=0.737  gap=0.002  pos=0.995  neg=0.992  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 9/30  loss=0.4999(diag)  lr=7.52e-05  acc=0.733  R@1=0.333  R@5=0.659  R@10=0.790  probe_known_R@1=0.298  probe_new_R@1=0.719  gap=0.003  pos=0.995  neg=0.992  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 10/30  loss=0.4999(diag)  lr=7.06e-05  acc=0.761  R@1=0.347  R@5=0.668  R@10=0.792  probe_known_R@1=0.298  probe_new_R@1=0.754  gap=0.003  pos=0.995  neg=0.992  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 11/30  loss=0.4999(diag)  lr=6.58e-05  acc=0.759  R@1=0.355  R@5=0.692  R@10=0.819  probe_known_R@1=0.277  probe_new_R@1=0.719  gap=0.003  pos=0.995  neg=0.992  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 12/30  loss=0.4999(diag)  lr=6.08e-05  acc=0.752  R@1=0.373  R@5=0.701  R@10=0.834  probe_known_R@1=0.234  probe_new_R@1=0.754  gap=0.003  pos=0.994  neg=0.991  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 13/30  loss=0.4999(diag)  lr=5.57e-05  acc=0.768  R@1=0.397  R@5=0.721  R@10=0.852  probe_known_R@1=0.319  probe_new_R@1=0.754  gap=0.003  pos=0.994  neg=0.991  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 14/30  loss=0.4999(diag)  lr=5.05e-05  acc=0.764  R@1=0.422  R@5=0.729  R@10=0.855  probe_known_R@1=0.298  probe_new_R@1=0.684  gap=0.003  pos=0.994  neg=0.991  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 15/30  loss=0.4999(diag)  lr=4.53e-05  acc=0.801  R@1=0.442  R@5=0.742  R@10=0.870  probe_known_R@1=0.234  probe_new_R@1=0.719  gap=0.004  pos=0.994  neg=0.990  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 16/30  loss=0.4999(diag)  lr=4.02e-05  acc=0.825  R@1=0.452  R@5=0.753  R@10=0.881  probe_known_R@1=0.298  probe_new_R@1=0.702  gap=0.004  pos=0.994  neg=0.990  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 17/30  loss=0.4999(diag)  lr=3.52e-05  acc=0.807  R@1=0.477  R@5=0.784  R@10=0.893  probe_known_R@1=0.298  probe_new_R@1=0.667  gap=0.004  pos=0.993  neg=0.990  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 18/30  loss=0.4999(diag)  lr=3.04e-05  acc=0.843  R@1=0.484  R@5=0.805  R@10=0.903  probe_known_R@1=0.298  probe_new_R@1=0.684  gap=0.004  pos=0.993  neg=0.989  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 19/30  loss=0.4998(diag)  lr=2.58e-05  acc=0.819  R@1=0.522  R@5=0.823  R@10=0.911  probe_known_R@1=0.340  probe_new_R@1=0.702  gap=0.004  pos=0.993  neg=0.988  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 20/30  loss=0.4998(diag)  lr=2.14e-05  acc=0.840  R@1=0.536  R@5=0.833  R@10=0.915  probe_known_R@1=0.298  probe_new_R@1=0.702  gap=0.005  pos=0.992  neg=0.987  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 21/30  loss=0.4998(diag)  lr=1.74e-05  acc=0.851  R@1=0.548  R@5=0.858  R@10=0.930  probe_known_R@1=0.298  probe_new_R@1=0.719  gap=0.005  pos=0.992  neg=0.987  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 22/30  loss=0.4998(diag)  lr=1.37e-05  acc=0.853  R@1=0.575  R@5=0.867  R@10=0.936  probe_known_R@1=0.362  probe_new_R@1=0.667  gap=0.006  pos=0.991  neg=0.986  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 23/30  loss=0.4998(diag)  lr=1.05e-05  acc=0.886  R@1=0.585  R@5=0.864  R@10=0.933  probe_known_R@1=0.340  probe_new_R@1=0.719  gap=0.006  pos=0.991  neg=0.985  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 24/30  loss=0.4998(diag)  lr=7.63e-06  acc=0.866  R@1=0.610  R@5=0.875  R@10=0.936  probe_known_R@1=0.362  probe_new_R@1=0.719  gap=0.007  pos=0.990  neg=0.984  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 25/30  loss=0.4998(diag)  lr=5.28e-06  acc=0.859  R@1=0.626  R@5=0.885  R@10=0.942  probe_known_R@1=0.383  probe_new_R@1=0.719  gap=0.007  pos=0.990  neg=0.983  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 26/30  loss=0.4998(diag)  lr=3.42e-06  acc=0.863  R@1=0.623  R@5=0.885  R@10=0.938  probe_known_R@1=0.362  probe_new_R@1=0.719  gap=0.007  pos=0.989  neg=0.982
+[CLIP-ViT-bigG-14-laion2B_patches] ep 27/30  loss=0.4998(diag)  lr=2.08e-06  acc=0.887  R@1=0.627  R@5=0.893  R@10=0.938  probe_known_R@1=0.362  probe_new_R@1=0.737  gap=0.008  pos=0.989  neg=0.982  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 28/30  loss=0.4998(diag)  lr=1.27e-06  acc=0.890  R@1=0.630  R@5=0.893  R@10=0.941  probe_known_R@1=0.362  probe_new_R@1=0.737  gap=0.007  pos=0.989  neg=0.982  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 29/30  loss=0.4998(diag)  lr=1.00e-06  acc=0.889  R@1=0.634  R@5=0.890  R@10=0.944  probe_known_R@1=0.383  probe_new_R@1=0.754  gap=0.008  pos=0.989  neg=0.981  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] ep 30/30  loss=0.4998(diag)  lr=1.27e-06  acc=0.862  R@1=0.637  R@5=0.893  R@10=0.945  probe_known_R@1=0.404  probe_new_R@1=0.754  gap=0.008  pos=0.989  neg=0.981  [best]
+[CLIP-ViT-bigG-14-laion2B_patches] Plot → logs/CLIP-ViT-bigG-14-laion2B_patches_training.png
+[CLIP-ViT-bigG-14-laion2B_patches] Saved checkpoints/CLIP-ViT-bigG-14-laion2B_patches.pt  (71.1 min)  best R@1=0.637  R@5=0.893  R@10=0.945  acc=0.862
+[CLIP-ViT-bigG-14-laion2B_patches] Deleted cache: cache/CLIP-ViT-bigG-14-laion2B_patches.pt
+[CLIP-ViT-bigG-14-laion2B_patches] Cleared HF cache: ['/home/ucloud/.cache/huggingface/hub/models--laion--CLIP-ViT-bigG-14-laion2B-39B-b160k']

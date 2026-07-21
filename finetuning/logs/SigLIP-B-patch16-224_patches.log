@@ -1,0 +1,28 @@
+[SigLIP-B-patch16-224_patches] GPU 0  variant=patches  mining=semi_hard
+[SigLIP-B-patch16-224_patches] image_size=224  input_dim=2304  epochs=20  pairs=1500  batch=32  margin=0.5
+[SigLIP-B-patch16-224_patches] Building descriptor cache...
+[SigLIP-B-patch16-224_patches] Cached 834 images (104 probe) / 834 tokens → cache/SigLIP-B-patch16-224_patches.pt
+[SigLIP-B-patch16-224_patches] ep 1/20  loss=0.4454(diag)  lr=6.83e-05  acc=0.763  R@1=0.410  R@5=0.710  R@10=0.825  probe_known_R@1=0.447  probe_new_R@1=0.632  gap=0.239  pos=0.613  neg=0.373  [best]
+[SigLIP-B-patch16-224_patches] ep 2/20  loss=0.4677(diag)  lr=6.62e-05  acc=0.774  R@1=0.432  R@5=0.763  R@10=0.863  probe_known_R@1=0.511  probe_new_R@1=0.684  gap=0.207  pos=0.662  neg=0.455  [best]
+[SigLIP-B-patch16-224_patches] ep 3/20  loss=0.4567(diag)  lr=6.34e-05  acc=0.795  R@1=0.474  R@5=0.740  R@10=0.834  probe_known_R@1=0.532  probe_new_R@1=0.667  gap=0.250  pos=0.620  neg=0.370  [best]
+[SigLIP-B-patch16-224_patches] ep 4/20  loss=0.4481(diag)  lr=5.99e-05  acc=0.812  R@1=0.505  R@5=0.778  R@10=0.871  probe_known_R@1=0.489  probe_new_R@1=0.579  gap=0.238  pos=0.724  neg=0.486  [best]
+[SigLIP-B-patch16-224_patches] ep 5/20  loss=0.4556(diag)  lr=5.58e-05  acc=0.838  R@1=0.555  R@5=0.812  R@10=0.885  probe_known_R@1=0.617  probe_new_R@1=0.667  gap=0.323  pos=0.584  neg=0.260  [best]
+[SigLIP-B-patch16-224_patches] ep 6/20  loss=0.4629(diag)  lr=5.12e-05  acc=0.786  R@1=0.575  R@5=0.816  R@10=0.885  probe_known_R@1=0.617  probe_new_R@1=0.702  gap=0.158  pos=0.751  neg=0.593  [best]
+[SigLIP-B-patch16-224_patches] ep 7/20  loss=0.4236(diag)  lr=4.62e-05  acc=0.861  R@1=0.629  R@5=0.845  R@10=0.911  probe_known_R@1=0.532  probe_new_R@1=0.649  gap=0.336  pos=0.647  neg=0.311  [best]
+[SigLIP-B-patch16-224_patches] ep 8/20  loss=0.4879(diag)  lr=4.09e-05  acc=0.872  R@1=0.662  R@5=0.884  R@10=0.940  probe_known_R@1=0.638  probe_new_R@1=0.702  gap=0.231  pos=0.747  neg=0.515  [best]
+[SigLIP-B-patch16-224_patches] ep 9/20  loss=0.4645(diag)  lr=3.55e-05  acc=0.888  R@1=0.678  R@5=0.892  R@10=0.934  probe_known_R@1=0.660  probe_new_R@1=0.702  gap=0.360  pos=0.589  neg=0.228  [best]
+[SigLIP-B-patch16-224_patches] ep 10/20  loss=0.4514(diag)  lr=3.01e-05  acc=0.859  R@1=0.667  R@5=0.860  R@10=0.908  probe_known_R@1=0.574  probe_new_R@1=0.667  gap=0.251  pos=0.659  neg=0.407
+[SigLIP-B-patch16-224_patches] ep 11/20  loss=0.4005(diag)  lr=2.48e-05  acc=0.894  R@1=0.711  R@5=0.896  R@10=0.940  probe_known_R@1=0.596  probe_new_R@1=0.632  gap=0.376  pos=0.603  neg=0.226  [best]
+[SigLIP-B-patch16-224_patches] ep 12/20  loss=0.4370(diag)  lr=1.98e-05  acc=0.888  R@1=0.714  R@5=0.877  R@10=0.925  probe_known_R@1=0.574  probe_new_R@1=0.614  gap=0.307  pos=0.671  neg=0.364  [best]
+[SigLIP-B-patch16-224_patches] ep 13/20  loss=0.3826(diag)  lr=1.52e-05  acc=0.893  R@1=0.742  R@5=0.899  R@10=0.934  probe_known_R@1=0.489  probe_new_R@1=0.614  gap=0.409  pos=0.583  neg=0.175  [best]
+[SigLIP-B-patch16-224_patches] ep 14/20  loss=0.3946(diag)  lr=1.11e-05  acc=0.882  R@1=0.736  R@5=0.874  R@10=0.927  probe_known_R@1=0.596  probe_new_R@1=0.649  gap=0.345  pos=0.635  neg=0.290
+[SigLIP-B-patch16-224_patches] ep 15/20  loss=0.3738(diag)  lr=7.59e-06  acc=0.908  R@1=0.756  R@5=0.901  R@10=0.944  probe_known_R@1=0.617  probe_new_R@1=0.632  gap=0.422  pos=0.577  neg=0.155  [best]
+[SigLIP-B-patch16-224_patches] ep 16/20  loss=0.3908(diag)  lr=4.76e-06  acc=0.872  R@1=0.740  R@5=0.877  R@10=0.922  probe_known_R@1=0.596  probe_new_R@1=0.632  gap=0.333  pos=0.640  neg=0.307
+[SigLIP-B-patch16-224_patches] ep 17/20  loss=0.3902(diag)  lr=2.69e-06  acc=0.907  R@1=0.756  R@5=0.900  R@10=0.937  probe_known_R@1=0.617  probe_new_R@1=0.649  gap=0.396  pos=0.598  neg=0.201
+[SigLIP-B-patch16-224_patches] ep 18/20  loss=0.4116(diag)  lr=1.42e-06  acc=0.872  R@1=0.741  R@5=0.889  R@10=0.926  probe_known_R@1=0.617  probe_new_R@1=0.667  gap=0.333  pos=0.641  neg=0.308
+[SigLIP-B-patch16-224_patches] ep 19/20  loss=0.4605(diag)  lr=1.00e-06  acc=0.919  R@1=0.789  R@5=0.923  R@10=0.952  probe_known_R@1=0.638  probe_new_R@1=0.702  gap=0.484  pos=0.522  neg=0.038  [best]
+[SigLIP-B-patch16-224_patches] ep 20/20  loss=0.4666(diag)  lr=1.42e-06  acc=0.938  R@1=0.801  R@5=0.929  R@10=0.960  probe_known_R@1=0.638  probe_new_R@1=0.667  gap=0.458  pos=0.574  neg=0.116  [best]
+[SigLIP-B-patch16-224_patches] Plot → logs/SigLIP-B-patch16-224_patches_training.png
+[SigLIP-B-patch16-224_patches] Saved checkpoints/SigLIP-B-patch16-224_patches.pt  (4.2 min)  best R@1=0.801  R@5=0.929  R@10=0.960  acc=0.938
+[SigLIP-B-patch16-224_patches] Deleted cache: cache/SigLIP-B-patch16-224_patches.pt
+[SigLIP-B-patch16-224_patches] Cleared HF cache: ['/home/ucloud/.cache/huggingface/hub/models--timm--ViT-B-16-SigLIP']

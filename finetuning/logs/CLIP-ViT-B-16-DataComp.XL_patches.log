@@ -1,0 +1,38 @@
+[CLIP-ViT-B-16-DataComp.XL_patches] GPU 0  variant=patches  mining=semi_hard
+[CLIP-ViT-B-16-DataComp.XL_patches] image_size=224  input_dim=2304  epochs=30  pairs=1500  batch=32  margin=0.5
+[CLIP-ViT-B-16-DataComp.XL_patches] Building descriptor cache...
+[CLIP-ViT-B-16-DataComp.XL_patches] Cached 834 images (104 probe) / 834 tokens → cache/CLIP-ViT-B-16-DataComp.XL_patches.pt
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 1/30  loss=0.4965(diag)  lr=4.95e-05  acc=0.606  R@1=0.167  R@5=0.449  R@10=0.614  probe_known_R@1=0.234  probe_new_R@1=0.684  gap=0.067  pos=0.717  neg=0.650  [best]
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 2/30  loss=0.4974(diag)  lr=4.88e-05  acc=0.626  R@1=0.179  R@5=0.453  R@10=0.648  probe_known_R@1=0.298  probe_new_R@1=0.649  gap=0.007  pos=0.969  neg=0.962  [best]
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 3/30  loss=0.4979(diag)  lr=4.79e-05  acc=0.597  R@1=0.178  R@5=0.451  R@10=0.618  probe_known_R@1=0.255  probe_new_R@1=0.632  gap=0.030  pos=0.899  neg=0.869
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 4/30  loss=0.4899(diag)  lr=4.67e-05  acc=0.630  R@1=0.200  R@5=0.486  R@10=0.636  probe_known_R@1=0.191  probe_new_R@1=0.737  gap=0.033  pos=0.878  neg=0.845  [best]
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 5/30  loss=0.4995(diag)  lr=4.53e-05  acc=0.649  R@1=0.200  R@5=0.497  R@10=0.653  probe_known_R@1=0.213  probe_new_R@1=0.667  gap=0.005  pos=0.981  neg=0.976
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 6/30  loss=0.4998(diag)  lr=4.37e-05  acc=0.674  R@1=0.212  R@5=0.503  R@10=0.660  probe_known_R@1=0.255  probe_new_R@1=0.719  gap=0.007  pos=0.981  neg=0.975  [best]
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 7/30  loss=0.4999(diag)  lr=4.19e-05  acc=0.643  R@1=0.215  R@5=0.511  R@10=0.666  probe_known_R@1=0.234  probe_new_R@1=0.737  gap=0.006  pos=0.981  neg=0.975  [best]
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 8/30  loss=0.4999(diag)  lr=3.99e-05  acc=0.647  R@1=0.218  R@5=0.512  R@10=0.679  probe_known_R@1=0.234  probe_new_R@1=0.719  gap=0.006  pos=0.981  neg=0.975  [best]
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 9/30  loss=0.5000(diag)  lr=3.78e-05  acc=0.651  R@1=0.223  R@5=0.519  R@10=0.692  probe_known_R@1=0.255  probe_new_R@1=0.737  gap=0.006  pos=0.981  neg=0.976  [best]
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 10/30  loss=0.4998(diag)  lr=3.55e-05  acc=0.659  R@1=0.225  R@5=0.516  R@10=0.692  probe_known_R@1=0.255  probe_new_R@1=0.737  gap=0.005  pos=0.982  neg=0.976  [best]
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 11/30  loss=0.4998(diag)  lr=3.31e-05  acc=0.704  R@1=0.223  R@5=0.526  R@10=0.686  probe_known_R@1=0.298  probe_new_R@1=0.684  gap=0.007  pos=0.983  neg=0.976
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 12/30  loss=0.4999(diag)  lr=3.06e-05  acc=0.697  R@1=0.234  R@5=0.536  R@10=0.699  probe_known_R@1=0.277  probe_new_R@1=0.684  gap=0.006  pos=0.982  neg=0.976  [best]
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 13/30  loss=0.4998(diag)  lr=2.81e-05  acc=0.667  R@1=0.249  R@5=0.544  R@10=0.707  probe_known_R@1=0.319  probe_new_R@1=0.702  gap=0.005  pos=0.982  neg=0.977  [best]
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 14/30  loss=0.4998(diag)  lr=2.55e-05  acc=0.694  R@1=0.249  R@5=0.570  R@10=0.712  probe_known_R@1=0.298  probe_new_R@1=0.702  gap=0.006  pos=0.982  neg=0.976
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 15/30  loss=0.4999(diag)  lr=2.29e-05  acc=0.711  R@1=0.259  R@5=0.570  R@10=0.729  probe_known_R@1=0.298  probe_new_R@1=0.702  gap=0.006  pos=0.982  neg=0.976  [best]
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 16/30  loss=0.4999(diag)  lr=2.04e-05  acc=0.742  R@1=0.260  R@5=0.582  R@10=0.744  probe_known_R@1=0.340  probe_new_R@1=0.719  gap=0.006  pos=0.982  neg=0.975  [best]
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 17/30  loss=0.4999(diag)  lr=1.79e-05  acc=0.687  R@1=0.260  R@5=0.599  R@10=0.744  probe_known_R@1=0.319  probe_new_R@1=0.737  gap=0.006  pos=0.981  neg=0.976
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 18/30  loss=0.4998(diag)  lr=1.55e-05  acc=0.707  R@1=0.268  R@5=0.601  R@10=0.748  probe_known_R@1=0.319  probe_new_R@1=0.719  gap=0.006  pos=0.981  neg=0.975  [best]
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 19/30  loss=0.4999(diag)  lr=1.33e-05  acc=0.740  R@1=0.274  R@5=0.608  R@10=0.755  probe_known_R@1=0.340  probe_new_R@1=0.702  gap=0.007  pos=0.982  neg=0.975  [best]
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 20/30  loss=0.4999(diag)  lr=1.11e-05  acc=0.718  R@1=0.271  R@5=0.622  R@10=0.748  probe_known_R@1=0.340  probe_new_R@1=0.702  gap=0.006  pos=0.982  neg=0.976
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 21/30  loss=0.4999(diag)  lr=9.11e-06  acc=0.733  R@1=0.278  R@5=0.615  R@10=0.766  probe_known_R@1=0.319  probe_new_R@1=0.702  gap=0.007  pos=0.982  neg=0.975  [best]
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 22/30  loss=0.4999(diag)  lr=7.29e-06  acc=0.720  R@1=0.278  R@5=0.621  R@10=0.766  probe_known_R@1=0.319  probe_new_R@1=0.719  gap=0.007  pos=0.982  neg=0.975
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 23/30  loss=0.4999(diag)  lr=5.68e-06  acc=0.727  R@1=0.273  R@5=0.625  R@10=0.768  probe_known_R@1=0.319  probe_new_R@1=0.702  gap=0.006  pos=0.981  neg=0.975
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 24/30  loss=0.4999(diag)  lr=4.28e-06  acc=0.724  R@1=0.275  R@5=0.621  R@10=0.767  probe_known_R@1=0.298  probe_new_R@1=0.702  gap=0.006  pos=0.981  neg=0.975
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 25/30  loss=0.4999(diag)  lr=3.12e-06  acc=0.718  R@1=0.279  R@5=0.633  R@10=0.766  probe_known_R@1=0.319  probe_new_R@1=0.719  gap=0.006  pos=0.981  neg=0.975  [best]
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 26/30  loss=0.4999(diag)  lr=2.20e-06  acc=0.712  R@1=0.279  R@5=0.638  R@10=0.767  probe_known_R@1=0.319  probe_new_R@1=0.719  gap=0.006  pos=0.981  neg=0.976
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 27/30  loss=0.4999(diag)  lr=1.54e-06  acc=0.712  R@1=0.285  R@5=0.641  R@10=0.766  probe_known_R@1=0.319  probe_new_R@1=0.702  gap=0.006  pos=0.982  neg=0.975  [best]
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 28/30  loss=0.4999(diag)  lr=1.13e-06  acc=0.719  R@1=0.288  R@5=0.638  R@10=0.770  probe_known_R@1=0.319  probe_new_R@1=0.719  gap=0.006  pos=0.982  neg=0.976  [best]
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 29/30  loss=0.4999(diag)  lr=1.00e-06  acc=0.722  R@1=0.289  R@5=0.641  R@10=0.770  probe_known_R@1=0.319  probe_new_R@1=0.719  gap=0.006  pos=0.981  neg=0.975  [best]
+[CLIP-ViT-B-16-DataComp.XL_patches] ep 30/30  loss=0.4999(diag)  lr=1.13e-06  acc=0.720  R@1=0.290  R@5=0.640  R@10=0.768  probe_known_R@1=0.340  probe_new_R@1=0.719  gap=0.006  pos=0.981  neg=0.975  [best]
+[CLIP-ViT-B-16-DataComp.XL_patches] Plot → logs/CLIP-ViT-B-16-DataComp.XL_patches_training.png
+[CLIP-ViT-B-16-DataComp.XL_patches] Saved checkpoints/CLIP-ViT-B-16-DataComp.XL_patches.pt  (6.2 min)  best R@1=0.290  R@5=0.640  R@10=0.768  acc=0.720
+[CLIP-ViT-B-16-DataComp.XL_patches] Deleted cache: cache/CLIP-ViT-B-16-DataComp.XL_patches.pt
+[CLIP-ViT-B-16-DataComp.XL_patches] Cleared HF cache: ['/home/ucloud/.cache/huggingface/hub/models--laion--CLIP-ViT-B-16-DataComp.XL-s13B-b90K']

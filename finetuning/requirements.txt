@@ -1,0 +1,10 @@
+# Install torch/torchvision first, following https://pytorch.org/get-started/locally/
+# for the correct CUDA build for your machine — a plain `pip install -r requirements.txt`
+# may pull a CPU-only or mismatched-CUDA build otherwise.
+torch
+torchvision
+datasets
+transformers
+open_clip_torch
+Pillow
+tqdm

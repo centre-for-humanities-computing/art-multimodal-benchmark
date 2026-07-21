@@ -1,0 +1,28 @@
+[EVA02-CLIP-L-14-336_patches] GPU 1  variant=patches  mining=semi_hard
+[EVA02-CLIP-L-14-336_patches] image_size=336  input_dim=3072  epochs=20  pairs=1500  batch=32  margin=0.5
+[EVA02-CLIP-L-14-336_patches] Building descriptor cache...
+[EVA02-CLIP-L-14-336_patches] Cached 834 images (104 probe) / 834 tokens → cache/EVA02-CLIP-L-14-336_patches.pt
+[EVA02-CLIP-L-14-336_patches] ep 1/20  loss=0.4927(diag)  lr=1.95e-05  acc=0.782  R@1=0.452  R@5=0.753  R@10=0.868  probe_known_R@1=0.532  probe_new_R@1=0.702  gap=0.134  pos=0.652  neg=0.518  [best]
+[EVA02-CLIP-L-14-336_patches] ep 2/20  loss=0.4859(diag)  lr=1.90e-05  acc=0.807  R@1=0.492  R@5=0.790  R@10=0.886  probe_known_R@1=0.574  probe_new_R@1=0.772  gap=0.238  pos=0.507  neg=0.269  [best]
+[EVA02-CLIP-L-14-336_patches] ep 3/20  loss=0.4968(diag)  lr=1.82e-05  acc=0.820  R@1=0.481  R@5=0.821  R@10=0.897  probe_known_R@1=0.553  probe_new_R@1=0.632  gap=0.048  pos=0.901  neg=0.853
+[EVA02-CLIP-L-14-336_patches] ep 4/20  loss=0.4903(diag)  lr=1.72e-05  acc=0.841  R@1=0.545  R@5=0.818  R@10=0.892  probe_known_R@1=0.574  probe_new_R@1=0.719  gap=0.219  pos=0.567  neg=0.349  [best]
+[EVA02-CLIP-L-14-336_patches] ep 5/20  loss=0.4912(diag)  lr=1.61e-05  acc=0.825  R@1=0.556  R@5=0.832  R@10=0.893  probe_known_R@1=0.553  probe_new_R@1=0.737  gap=0.212  pos=0.561  neg=0.349  [best]
+[EVA02-CLIP-L-14-336_patches] ep 6/20  loss=0.4525(diag)  lr=1.48e-05  acc=0.863  R@1=0.570  R@5=0.799  R@10=0.878  probe_known_R@1=0.596  probe_new_R@1=0.789  gap=0.232  pos=0.622  neg=0.390  [best]
+[EVA02-CLIP-L-14-336_patches] ep 7/20  loss=0.4462(diag)  lr=1.34e-05  acc=0.821  R@1=0.558  R@5=0.811  R@10=0.878  probe_known_R@1=0.553  probe_new_R@1=0.684  gap=0.236  pos=0.543  neg=0.308
+[EVA02-CLIP-L-14-336_patches] ep 8/20  loss=0.4089(diag)  lr=1.20e-05  acc=0.802  R@1=0.574  R@5=0.785  R@10=0.856  probe_known_R@1=0.596  probe_new_R@1=0.754  gap=0.240  pos=0.535  neg=0.295  [best]
+[EVA02-CLIP-L-14-336_patches] ep 9/20  loss=0.3948(diag)  lr=1.05e-05  acc=0.874  R@1=0.599  R@5=0.830  R@10=0.895  probe_known_R@1=0.681  probe_new_R@1=0.789  gap=0.331  pos=0.568  neg=0.237  [best]
+[EVA02-CLIP-L-14-336_patches] ep 10/20  loss=0.4471(diag)  lr=9.01e-06  acc=0.863  R@1=0.618  R@5=0.821  R@10=0.890  probe_known_R@1=0.702  probe_new_R@1=0.772  gap=0.281  pos=0.579  neg=0.299  [best]
+[EVA02-CLIP-L-14-336_patches] ep 11/20  loss=0.4237(diag)  lr=7.56e-06  acc=0.811  R@1=0.625  R@5=0.826  R@10=0.892  probe_known_R@1=0.617  probe_new_R@1=0.702  gap=0.241  pos=0.571  neg=0.330  [best]
+[EVA02-CLIP-L-14-336_patches] ep 12/20  loss=0.3860(diag)  lr=6.19e-06  acc=0.861  R@1=0.627  R@5=0.821  R@10=0.889  probe_known_R@1=0.638  probe_new_R@1=0.702  gap=0.334  pos=0.536  neg=0.202  [best]
+[EVA02-CLIP-L-14-336_patches] ep 13/20  loss=0.4207(diag)  lr=4.92e-06  acc=0.865  R@1=0.659  R@5=0.842  R@10=0.903  probe_known_R@1=0.681  probe_new_R@1=0.719  gap=0.305  pos=0.541  neg=0.236  [best]
+[EVA02-CLIP-L-14-336_patches] ep 14/20  loss=0.4186(diag)  lr=3.78e-06  acc=0.863  R@1=0.632  R@5=0.825  R@10=0.888  probe_known_R@1=0.617  probe_new_R@1=0.667  gap=0.326  pos=0.540  neg=0.214
+[EVA02-CLIP-L-14-336_patches] ep 15/20  loss=0.4065(diag)  lr=2.81e-06  acc=0.858  R@1=0.645  R@5=0.856  R@10=0.914  probe_known_R@1=0.660  probe_new_R@1=0.737  gap=0.337  pos=0.505  neg=0.168
+[EVA02-CLIP-L-14-336_patches] ep 16/20  loss=0.4203(diag)  lr=2.04e-06  acc=0.851  R@1=0.636  R@5=0.825  R@10=0.881  probe_known_R@1=0.638  probe_new_R@1=0.632  gap=0.279  pos=0.558  neg=0.279
+[EVA02-CLIP-L-14-336_patches] ep 17/20  loss=0.4109(diag)  lr=1.46e-06  acc=0.844  R@1=0.637  R@5=0.838  R@10=0.895  probe_known_R@1=0.638  probe_new_R@1=0.754  gap=0.290  pos=0.551  neg=0.261
+[EVA02-CLIP-L-14-336_patches] ep 18/20  loss=0.4280(diag)  lr=1.12e-06  acc=0.856  R@1=0.655  R@5=0.845  R@10=0.889  probe_known_R@1=0.553  probe_new_R@1=0.667  gap=0.295  pos=0.535  neg=0.241
+[EVA02-CLIP-L-14-336_patches] ep 19/20  loss=0.4811(diag)  lr=1.00e-06  acc=0.893  R@1=0.690  R@5=0.879  R@10=0.934  probe_known_R@1=0.617  probe_new_R@1=0.667  gap=0.403  pos=0.536  neg=0.133  [best]
+[EVA02-CLIP-L-14-336_patches] ep 20/20  loss=0.4695(diag)  lr=1.12e-06  acc=0.877  R@1=0.664  R@5=0.870  R@10=0.910  probe_known_R@1=0.702  probe_new_R@1=0.737  gap=0.328  pos=0.548  neg=0.220
+[EVA02-CLIP-L-14-336_patches] Plot → logs/EVA02-CLIP-L-14-336_patches_training.png
+[EVA02-CLIP-L-14-336_patches] Saved checkpoints/EVA02-CLIP-L-14-336_patches.pt  (44.3 min)  best R@1=0.690  R@5=0.879  R@10=0.934  acc=0.893
+[EVA02-CLIP-L-14-336_patches] Deleted cache: cache/EVA02-CLIP-L-14-336_patches.pt
+[EVA02-CLIP-L-14-336_patches] HF cache: nothing found for EVA02-L-14-336

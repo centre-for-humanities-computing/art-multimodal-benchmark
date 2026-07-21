@@ -1,0 +1,28 @@
+[SigLIP-SO400M-patch14-384_patches] GPU 0  variant=patches  mining=semi_hard
+[SigLIP-SO400M-patch14-384_patches] image_size=384  input_dim=3456  epochs=20  pairs=1500  batch=32  margin=0.5
+[SigLIP-SO400M-patch14-384_patches] Building descriptor cache...
+[SigLIP-SO400M-patch14-384_patches] Cached 834 images (104 probe) / 834 tokens → cache/SigLIP-SO400M-patch14-384_patches.pt
+[SigLIP-SO400M-patch14-384_patches] ep 1/20  loss=0.4609(diag)  lr=4.97e-05  acc=0.773  R@1=0.442  R@5=0.744  R@10=0.849  probe_known_R@1=0.553  probe_new_R@1=0.719  gap=0.284  pos=0.516  neg=0.232  [best]
+[SigLIP-SO400M-patch14-384_patches] ep 2/20  loss=0.4953(diag)  lr=4.87e-05  acc=0.798  R@1=0.438  R@5=0.789  R@10=0.888  probe_known_R@1=0.489  probe_new_R@1=0.719  gap=0.097  pos=0.868  neg=0.771
+[SigLIP-SO400M-patch14-384_patches] ep 3/20  loss=0.4675(diag)  lr=4.70e-05  acc=0.827  R@1=0.521  R@5=0.829  R@10=0.904  probe_known_R@1=0.511  probe_new_R@1=0.719  gap=0.240  pos=0.638  neg=0.398  [best]
+[SigLIP-SO400M-patch14-384_patches] ep 4/20  loss=0.4456(diag)  lr=4.48e-05  acc=0.888  R@1=0.589  R@5=0.858  R@10=0.927  probe_known_R@1=0.553  probe_new_R@1=0.667  gap=0.299  pos=0.624  neg=0.325  [best]
+[SigLIP-SO400M-patch14-384_patches] ep 5/20  loss=0.4651(diag)  lr=4.21e-05  acc=0.891  R@1=0.640  R@5=0.859  R@10=0.937  probe_known_R@1=0.553  probe_new_R@1=0.684  gap=0.355  pos=0.566  neg=0.211  [best]
+[SigLIP-SO400M-patch14-384_patches] ep 6/20  loss=0.4649(diag)  lr=3.89e-05  acc=0.891  R@1=0.677  R@5=0.863  R@10=0.923  probe_known_R@1=0.532  probe_new_R@1=0.702  gap=0.322  pos=0.643  neg=0.321  [best]
+[SigLIP-SO400M-patch14-384_patches] ep 7/20  loss=0.4417(diag)  lr=3.53e-05  acc=0.895  R@1=0.700  R@5=0.882  R@10=0.926  probe_known_R@1=0.574  probe_new_R@1=0.719  gap=0.307  pos=0.615  neg=0.309  [best]
+[SigLIP-SO400M-patch14-384_patches] ep 8/20  loss=0.4052(diag)  lr=3.15e-05  acc=0.921  R@1=0.752  R@5=0.922  R@10=0.952  probe_known_R@1=0.511  probe_new_R@1=0.737  gap=0.450  pos=0.582  neg=0.132  [best]
+[SigLIP-SO400M-patch14-384_patches] ep 9/20  loss=0.4531(diag)  lr=2.75e-05  acc=0.933  R@1=0.796  R@5=0.921  R@10=0.958  probe_known_R@1=0.617  probe_new_R@1=0.649  gap=0.353  pos=0.643  neg=0.289  [best]
+[SigLIP-SO400M-patch14-384_patches] ep 10/20  loss=0.3987(diag)  lr=2.35e-05  acc=0.924  R@1=0.800  R@5=0.918  R@10=0.949  probe_known_R@1=0.596  probe_new_R@1=0.684  gap=0.334  pos=0.679  neg=0.345  [best]
+[SigLIP-SO400M-patch14-384_patches] ep 11/20  loss=0.3674(diag)  lr=1.95e-05  acc=0.938  R@1=0.838  R@5=0.953  R@10=0.975  probe_known_R@1=0.638  probe_new_R@1=0.667  gap=0.471  pos=0.610  neg=0.138  [best]
+[SigLIP-SO400M-patch14-384_patches] ep 12/20  loss=0.4187(diag)  lr=1.57e-05  acc=0.922  R@1=0.836  R@5=0.937  R@10=0.952  probe_known_R@1=0.596  probe_new_R@1=0.649  gap=0.387  pos=0.649  neg=0.262
+[SigLIP-SO400M-patch14-384_patches] ep 13/20  loss=0.3675(diag)  lr=1.21e-05  acc=0.934  R@1=0.853  R@5=0.951  R@10=0.964  probe_known_R@1=0.596  probe_new_R@1=0.579  gap=0.390  pos=0.655  neg=0.265  [best]
+[SigLIP-SO400M-patch14-384_patches] ep 14/20  loss=0.3818(diag)  lr=8.91e-06  acc=0.944  R@1=0.873  R@5=0.948  R@10=0.962  probe_known_R@1=0.638  probe_new_R@1=0.667  gap=0.449  pos=0.616  neg=0.167  [best]
+[SigLIP-SO400M-patch14-384_patches] ep 15/20  loss=0.3822(diag)  lr=6.17e-06  acc=0.930  R@1=0.851  R@5=0.942  R@10=0.962  probe_known_R@1=0.638  probe_new_R@1=0.649  gap=0.363  pos=0.660  neg=0.298
+[SigLIP-SO400M-patch14-384_patches] ep 16/20  loss=0.3520(diag)  lr=3.95e-06  acc=0.951  R@1=0.871  R@5=0.942  R@10=0.967  probe_known_R@1=0.638  probe_new_R@1=0.684  gap=0.471  pos=0.623  neg=0.152
+[SigLIP-SO400M-patch14-384_patches] ep 17/20  loss=0.3852(diag)  lr=2.33e-06  acc=0.908  R@1=0.853  R@5=0.938  R@10=0.963  probe_known_R@1=0.596  probe_new_R@1=0.614  gap=0.355  pos=0.640  neg=0.285
+[SigLIP-SO400M-patch14-384_patches] ep 18/20  loss=0.3590(diag)  lr=1.33e-06  acc=0.946  R@1=0.859  R@5=0.936  R@10=0.953  probe_known_R@1=0.596  probe_new_R@1=0.649  gap=0.397  pos=0.657  neg=0.260
+[SigLIP-SO400M-patch14-384_patches] ep 19/20  loss=0.3971(diag)  lr=1.00e-06  acc=0.939  R@1=0.877  R@5=0.960  R@10=0.978  probe_known_R@1=0.681  probe_new_R@1=0.649  gap=0.460  pos=0.626  neg=0.167  [best]
+[SigLIP-SO400M-patch14-384_patches] ep 20/20  loss=0.4519(diag)  lr=1.33e-06  acc=0.958  R@1=0.904  R@5=0.971  R@10=0.985  probe_known_R@1=0.723  probe_new_R@1=0.632  gap=0.547  pos=0.589  neg=0.042  [best]
+[SigLIP-SO400M-patch14-384_patches] Plot → logs/SigLIP-SO400M-patch14-384_patches_training.png
+[SigLIP-SO400M-patch14-384_patches] Saved checkpoints/SigLIP-SO400M-patch14-384_patches.pt  (37.5 min)  best R@1=0.904  R@5=0.971  R@10=0.985  acc=0.958
+[SigLIP-SO400M-patch14-384_patches] Deleted cache: cache/SigLIP-SO400M-patch14-384_patches.pt
+[SigLIP-SO400M-patch14-384_patches] Cleared HF cache: ['/home/ucloud/.cache/huggingface/hub/models--timm--ViT-SO400M-14-SigLIP-384']
