@@ -55,7 +55,7 @@ pip install -r requirements.txt
 
 ## Usage
 
-The script has an extensive config section at the top where you can choose between the nine models benchmarked in our paper (via `RUN_MODELS` — by default only `DINOv2-base` is set to run), hyperparameters for each model (epochs, learning rates, etc.), and between two pooling methods (attention-pooling, stats-pooling), then re-run it as you wish. Note that the setup is inherently non-deterministic, so re-running it may result in slightly different models than the ones presented in the paper.
+The script has an extensive config section at the top where you can choose between the nine models benchmarked in our paper (via `RUN_MODELS` — by default only `DINOv2-base` is set to run), hyperparameters for each model (epochs, learning rates, etc.), and between two pooling methods (attention-pooling, stats-pooling), then re-run it as you wish. Note that the setup is inherently non-deterministic, so re-running it may result in slightly different models than the ones presented in the paper. Refer to the variance check in paper to get an idea how much the results might differ per model.
 
 You can then run the script with:
 
