@@ -51,7 +51,7 @@ from tqdm import tqdm
 
 # Data source and paths
 
-HF_REPO_ID       = "MKipke/finetuning-landscape-painting"
+HF_REPO_ID       = "chcaa/finetuning-landscape-painting"
 TRAIN_SPLIT_NAME = "train"
 PROBE_SPLIT_NAME = "probe"
 
@@ -61,7 +61,7 @@ ARTIST_COLUMN       = "artist" # Column names in the parquet files
 OUTPUT_DIR = "checkpoints"
 CACHE_DIR  = "cache"
 LOG_DIR    = "logs"
-RUN_MODELS = ["DINOv2-base"]
+RUN_MODELS = ["DINOv2-base"] # add others from the list or keep empty to include all
 CLEAR_CACHE = True  # delete descriptor cache and HF model weights after each job
 
 # Checkpoint selection
